@@ -1,0 +1,3 @@
+-R . nbe
+./systemt/static.v
+./systemt/semantic.v

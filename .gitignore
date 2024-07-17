@@ -3,3 +3,13 @@
 **/.vscode/
 
 *.agdai
+
+*.aux
+*.glob
+*.vok
+*.vos
+*.vo
+
+CoqMakefile
+CoqMakefile.conf
+.CoqMakefile.d
