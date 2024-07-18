@@ -22,3 +22,4 @@ Notation "σ1 ∘ σ2" := (es_comp σ1 σ2)
   (at level 49, right associativity): type_scope.
  
 Definition q (σ : Subst) := es_ext (σ ∘ ↑) (exp_var 0).
+  
