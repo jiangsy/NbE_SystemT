@@ -1,13 +1,13 @@
-Inductive Typ : Prop :=
+Inductive Typ : Set :=
   | typ_nat : Typ
   | typ_arr : Typ -> Typ -> Typ.
 
-Inductive Subst : Prop :=
+Inductive Subst : Set :=
   | es_shift 
   | es_id 
   | es_comp (σ1 σ2 : Subst)
   | es_ext (σ : Subst) (e : Exp) 
-with Exp : Prop :=
+with Exp : Set :=
   | exp_var (n : nat)
   | exp_zero  
   | exp_suc (e : Exp)
