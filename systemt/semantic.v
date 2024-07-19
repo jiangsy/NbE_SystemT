@@ -92,101 +92,80 @@ where "f ∙ a ↘ b" := (PApp f a b) and
       "rec( dz , ds , dn ) ↘ d" := (PRec dz ds dn d) and 
       "⟦ σ ⟧s ρ ↘ ρ'" := (PSubst σ ρ ρ').
 
-Scheme papp_sch := Induction for PApp Sort Prop
-  with peval_sch := Induction for PEval Sort Prop
-  with prec_sch := Induction for PRec Sort Prop 
-  with psubst_sch := Induction for PSubst Sort Prop.
+Scheme papp_ind := Induction for PApp Sort Prop
+  with peval_ind := Induction for PEval Sort Prop
+  with prec_ind := Induction for PRec Sort Prop 
+  with psubst_ind := Induction for PSubst Sort Prop.
 
-Lemma papp_det : forall f a b1,
-  f ∙ a ↘ b1 -> 
-  forall b2,
-  f ∙ a ↘ b2 -> 
-  b1 = b2.
+Combined Scheme papp_mutind from papp_ind, peval_ind, prec_ind, psubst_ind.
+
+Lemma papp_peval_prec_psubst_det : 
+  ( forall f a b1, f ∙ a ↘ b1 -> forall b2, f ∙ a ↘ b2 ->  b1 = b2 ) /\
+  ( forall t ρ a1, ⟦ t ⟧ ρ ↘ a1 -> forall a2, ⟦ t ⟧ ρ ↘ a2 -> a1 = a2 ) /\
+  ( forall dz ds dn d1, rec( dz , ds , dn ) ↘ d1 -> forall d2,  rec( dz , ds , dn ) ↘ d2 -> d1 = d2 ) /\
+  ( forall σ ρ ρ1', ⟦ σ ⟧s ρ ↘ ρ1' -> forall ρ2', ⟦ σ ⟧s ρ ↘ ρ2' -> ρ1' = ρ2' ).
 Proof.
-  intros f a b1 Happ1. 
-  eapply papp_sch with (P := fun f a b1 p => forall b2 : D, f ∙ a ↘ b2 -> b1 = b2)
-    (P0 := fun t ρ a1 p => forall a2, ⟦ t ⟧ ρ ↘ a2 -> a1 = a2)
-    (P1 := fun dz ds dn d1 p => forall d2, rec( dz , ds , dn ) ↘ d2 -> d1 = d2)
-    (P2 := fun σ ρ ρ1' p => forall ρ2', ⟦ σ ⟧s ρ ↘ ρ2' -> ρ1' = ρ2')
-    ; intros; auto.
+  apply papp_mutind; intros.
   - dependent destruction H0; auto.
+  - dependent destruction H; auto.
+  - dependent destruction H; auto.
+  - dependent destruction H; auto.
+  - dependent destruction H2.
+    + apply H in H2_. 
+      apply H0 in H2_0. subst.
+      apply H1 in H2. auto.
   - dependent destruction H. auto.
-  
-  - dependent destruction H. auto.
-  - dependent destruction H. auto.
-  - dependent destruction H2; auto.
-    apply H in H2_.
-    apply H0 in H2_0. subst.
-    apply H1 in H2. auto.
-  - dependent destruction H. auto.
-  - dependent destruction H0. auto.
-    apply f_equal. apply H; auto.
-  - dependent destruction H3. 
+  - dependent destruction H0. 
+    apply f_equal. eauto.
+  - dependent destruction H3. eauto.
     apply H in H3_.
     apply H0 in H3_0.
     apply H1 in H3_1.
-    subst.
-    apply H2 in H3. auto.
-  - dependent destruction H1. 
-    apply H0 in H2. auto.
-
+    subst. eauto.
+  - dependent destruction H1.
+    eauto.
   - dependent destruction H. auto.
   - dependent destruction H2.
     apply H0 in H3. subst.
     apply H in H2. subst.
-    apply H1; auto.
+    eauto.
   - dependent destruction H. auto.
- 
   - dependent destruction H. auto.
   - dependent destruction H. auto.
   - dependent destruction H1.
-    apply H in H1_. subst.
-    apply H0 in H1_0. auto.
-  - dependent destruction H1. apply H0 in H2. subst. auto.
+    apply H in H1_. subst. eauto.
+  - dependent destruction H1. 
+    apply H0 in H2. subst. eauto.
 Qed.
 
-Lemma papp_det' : forall f a b1,
+Theorem papp_det : forall f a b1 b2, 
   f ∙ a ↘ b1 -> 
-  forall b2,
   f ∙ a ↘ b2 -> 
-  b1 = b2
-with peval_det' : forall t ρ a1,
+  b1 = b2.
+Proof. 
+  specialize papp_peval_prec_psubst_det. intuition. eauto.
+Qed.
+
+Theorem peval_det : forall t ρ a1 a2, 
   ⟦ t ⟧ ρ ↘ a1 -> 
-  forall a2,
   ⟦ t ⟧ ρ ↘ a2 -> 
-  a1 = a2
-with prec_det' : forall dz ds dn d1,
-  rec( dz , ds , dn ) ↘ d1 ->
-  forall d2, 
-  rec( dz , ds , dn ) ↘ d2 ->
-  d1 = d2
-with psubst_det' : forall σ ρ ρ1',
-  ⟦ σ ⟧s ρ ↘ ρ1' ->
-  forall ρ2',
-  ⟦ σ ⟧s ρ ↘ ρ2' ->
+  a1 = a2.
+Proof. 
+  specialize papp_peval_prec_psubst_det. intuition. eauto.
+Qed.
+
+Theorem prec_det : forall dz ds dn d1 d2, 
+  rec( dz , ds , dn ) ↘ d1 -> 
+  rec( dz , ds , dn ) ↘ d2 -> 
+  d1 = d2.
+Proof.  
+  specialize papp_peval_prec_psubst_det. intuition. eauto.
+Qed.
+
+Theorem psubst_det : forall σ ρ ρ1' ρ2', 
+  ⟦ σ ⟧s ρ ↘ ρ1' -> 
+  ⟦ σ ⟧s ρ ↘ ρ2' -> 
   ρ1' = ρ2'.
 Proof.
-  - clear papp_det'. intros * Happ1.
-    induction Happ1; intros * Happ2; dependent destruction Happ2; auto.
-    * eapply peval_det'; eauto.
-  - clear peval_det'. intros * Heval1. 
-    induction Heval1; intros * Heval2; dependent destruction Heval2; eauto.
-    + apply IHHeval1_1 in Heval2_1; eauto.
-      apply IHHeval1_2 in Heval2_2; eauto.
-      subst. eapply papp_det'; eauto.
-    + apply f_equal. eapply IHHeval1; eauto.
-    + apply IHHeval1_1 in Heval2_1.
-      apply IHHeval1_2 in Heval2_2.
-      apply IHHeval1_3 in Heval2_3. subst.
-      eapply prec_det'; eauto.
-  - clear prec_det'. intros * Hrec1.
-    induction Hrec1; intros * Hrec2; dependent destruction Hrec2; eauto.
-    + apply IHHrec1 in Hrec2; subst.
-      eapply papp_det' in H; eauto. subst.
-      eapply papp_det' in H0; eauto.
-  - clear psubst_det'. intros * Hsubst1.
-    induction Hsubst1; intros * Hsubst2; dependent destruction Hsubst2; auto.
-    + apply IHHsubst1_1 in Hsubst2_1. subst.
-      apply IHHsubst1_2 in Hsubst2_2. auto.
-    + eapply peval_det' in H; eauto. subst. auto.
-Admitted.  (* cannot guess the argument of fix *)
+  specialize papp_peval_prec_psubst_det. intuition. eauto.
+Qed.
