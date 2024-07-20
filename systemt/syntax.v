@@ -77,6 +77,11 @@ with  SubstTyping : Ctx -> Subst -> Ctx -> Prop :=
 where "Γ ⊢ t : T" := (Typing Γ t T) and
       "Γ ⊢s σ : Δ" := (SubstTyping Γ σ Δ).
 
+Scheme typing_ind := Induction for Typing Sort Prop
+  with subst_typing_ind := Induction for SubstTyping Sort Prop.
+
+Combined Scheme typing_subst_typing_mutind from typing_ind, subst_typing_ind.
+
 Module Intensional.
   Inductive Ne : Set :=
   | ne_v (vi : nat)
@@ -202,9 +207,9 @@ Module Intensional.
       Γ ⊢s σ ≈ σ' : Δ ->
       Γ ⊢ s ≈ s' : S ->
       Γ ⊢s es_ext σ s ≈ es_ext σ' s' : (S :: Δ)
-    | subst_eq_compat_comp : forall Γ1 Γ2 Γ3 σ σ' τ τ',
-      Γ1 ⊢s σ ≈ σ' : Γ2 ->
-      Γ2 ⊢s τ ≈ τ' : Γ3 ->
+    | subst_eq_compat_comp : forall Γ1 Γ2 Γ3 σ σ' τ τ', (* typo in p.p 29 ? *)
+      Γ1 ⊢s τ ≈ τ' : Γ2 ->
+      Γ2 ⊢s σ ≈ σ': Γ3 ->
       Γ1 ⊢s σ ∘ τ ≈ σ' ∘ τ' : Γ3
     | subst_eq_symm : forall Γ Δ σ σ',
       Γ ⊢s σ ≈ σ' : Δ ->
@@ -215,6 +220,28 @@ Module Intensional.
       Γ ⊢s σ1 ≈ σ3 : Δ
   where "Γ ⊢ t ≈ t' : T" := (ExpEq Γ t t' T) and 
         "Γ ⊢s σ ≈ σ' : Δ" := (SubstEq Γ σ σ' Δ).
+
+  Lemma exp_eq_subst_eq_refl : 
+    (forall Γ t T, Γ ⊢ t : T -> Γ ⊢ t ≈ t : T) /\
+    (forall Γ σ Δ, Γ ⊢s σ : Δ -> Γ ⊢s σ ≈ σ : Δ).
+  Proof.
+    apply typing_subst_typing_mutind; intros; eauto using ExpEq, SubstEq.
+  Qed.
+
+  Corollary exp_eq_refl : forall Γ t T, 
+    Γ ⊢ t : T -> 
+    Γ ⊢ t ≈ t : T.
+  Proof.
+    specialize exp_eq_subst_eq_refl; intuition; eauto.
+  Qed.
+
+  Corollary subst_eq_refl : forall Γ Δ σ,
+    Γ ⊢s σ : Δ ->
+    Γ ⊢s σ ≈ σ : Δ.
+  Proof.
+    specialize exp_eq_subst_eq_refl; intuition; eauto.
+  Qed.
+
 End Intensional.
 
 Module Extensional.
@@ -228,7 +255,7 @@ Module Extensional.
   | nf_zero
   | nf_suc (v : Nf).
 
-    Reserved Notation "Γ ⊢ t ≈ t' : T"
+  Reserved Notation "Γ ⊢ t ≈ t' : T"
     (at level 55, t at next level, t' at next level, no associativity).
   Reserved Notation "Γ ⊢s σ ≈ σ' : Δ"
     (at level 55, σ at next level, σ' at next level, no associativity).
@@ -352,10 +379,10 @@ Module Extensional.
       Γ ⊢s σ ≈ σ' : Δ ->
       Γ ⊢ s ≈ s' : S ->
       Γ ⊢s es_ext σ s ≈ es_ext σ' s' : (S :: Δ)
-    | subst_eq_compat_comp : forall Γ1 Γ2 Γ3 σ σ' τ τ',
-      Γ1 ⊢s σ ≈ σ' : Γ2 ->
-      Γ2 ⊢s τ ≈ τ' : Γ3 ->
-      Γ1 ⊢s σ ∘ τ ≈ σ' ∘ τ' : Γ3
+    | subst_eq_compat_comp : forall Γ1 Γ2 Γ3 σ σ' τ τ', (* typo in p.p 29 ? *)
+      Γ1 ⊢s τ ≈ τ' : Γ2 ->
+      Γ2 ⊢s σ ≈ σ' : Γ3 ->
+      Γ1 ⊢s σ ∘ τ ≈ σ' ∘ τ' : Γ3 
     | subst_eq_symm : forall Γ Δ σ σ',
       Γ ⊢s σ ≈ σ' : Δ ->
       Γ ⊢s σ' ≈ σ : Δ
@@ -365,4 +392,26 @@ Module Extensional.
       Γ ⊢s σ1 ≈ σ3 : Δ
   where "Γ ⊢ t ≈ t' : T" := (ExpEq Γ t t' T) and 
         "Γ ⊢s σ ≈ σ' : Δ" := (SubstEq Γ σ σ' Δ).
+      
+  Lemma exp_eq_subst_eq_refl : 
+    (forall Γ t T, Γ ⊢ t : T -> Γ ⊢ t ≈ t : T) /\
+    (forall Γ σ Δ, Γ ⊢s σ : Δ -> Γ ⊢s σ ≈ σ : Δ).
+  Proof.
+    apply typing_subst_typing_mutind; intros; eauto using ExpEq, SubstEq.
+  Qed.
+
+  Corollary exp_eq_refl : forall Γ t T, 
+    Γ ⊢ t : T -> 
+    Γ ⊢ t ≈ t : T.
+  Proof.
+    specialize exp_eq_subst_eq_refl; intuition; eauto.
+  Qed.
+
+  Corollary subst_eq_refl : forall Γ Δ σ,
+    Γ ⊢s σ : Δ ->
+    Γ ⊢s σ ≈ σ : Δ.
+  Proof.
+    specialize exp_eq_subst_eq_refl; intuition; eauto.
+  Qed.
+
 End Extensional.
