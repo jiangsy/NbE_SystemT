@@ -202,5 +202,47 @@ with RNeRel : nat -> Dne -> Intensional.Ne -> Prop :=
 where "R⁻ⁿᶠ ⦇ n ⦈ d ↘ v" := (RNfRel n d v) and 
       "R⁻ⁿᵉ ⦇ n ⦈ e ↘ u" := (RNeRel n e u).
 
+Scheme rne_ind := Induction for RNeRel Sort Prop
+  with rnf_ind := Induction for RNfRel Sort Prop.
+
+Combined Scheme rne_rnf_mutind from rne_ind, rnf_ind.
+
+Lemma rne_rnf_det : 
+  ( forall n e u1, R⁻ⁿᵉ ⦇ n ⦈ e ↘ u1 -> forall u2, R⁻ⁿᵉ ⦇ n ⦈ e ↘ u2 -> u1 = u2 ) /\ 
+  ( forall n d v1, R⁻ⁿᶠ ⦇ n ⦈ d ↘ v1 -> forall v2, R⁻ⁿᶠ ⦇ n ⦈ d ↘ v2 -> v1 = v2 ).
+Proof.
+  apply rne_rnf_mutind; intros; eauto.
+  - dependent destruction H; eauto.
+  - dependent destruction H1; eauto.
+    apply f_equal2; eauto.
+  - dependent destruction H2.
+    apply f_equal3; eauto.
+  - dependent destruction H0.
+    eapply eval_det in e; eauto.
+    subst.
+    apply f_equal; eauto.
+  - dependent destruction H0.
+    apply f_equal; eauto.
+  - dependent destruction H. auto.
+  - dependent destruction H0.
+    apply f_equal; eauto.
+Qed.
+
+Corollary rne_det : forall n e u1 u2, 
+  R⁻ⁿᵉ ⦇ n ⦈ e ↘ u1 -> 
+  R⁻ⁿᵉ ⦇ n ⦈ e ↘ u2 -> 
+  u1 = u2.  
+Proof.
+  specialize rne_rnf_det. intuition. eauto.
+Qed.
+
+Corollary rnf_det : forall n d v1 v2, 
+  R⁻ⁿᶠ ⦇ n ⦈ d ↘ v1 -> 
+  R⁻ⁿᶠ ⦇ n ⦈ d ↘ v2 -> 
+  v1 = v2.
+Proof.
+  specialize rne_rnf_det. intuition. eauto.
+Qed.
+
 Definition init_env (n : nat) : Env :=
   fun i => d_ne (dn_l (n - i - 1)).
