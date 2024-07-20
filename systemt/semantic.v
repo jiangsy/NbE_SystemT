@@ -5,7 +5,7 @@ Inductive D : Set :=
   | d_zero
   | d_suc (d : D)
   | d_abs (t : Exp) (ρ : nat -> D)
-  | d_neutral (dn : Dne)
+  | d_ne (dn : Dne)
 with Dne : Set :=
   | dn_l (n : nat) 
   | dn_rec (z s : D) (dn : Dne)
@@ -33,53 +33,53 @@ Reserved Notation "rec( dz , ds , dn ) ↘ d"
   (at level 55, ds at next level, dn at next level, no associativity).
 Reserved Notation "⟦ σ ⟧s ρ ↘ ρ'"
   (at level 55, ρ at next level, no associativity).
-Inductive PApp : D -> D -> D -> Prop :=
-  | papp_abs : forall t ρ a b,
+Inductive AppRel : D -> D -> D -> Prop :=
+  | app_abs : forall t ρ a b,
     ⟦ t ⟧ (ρ ↦ a) ↘ b ->
     (d_abs t ρ) ∙ a ↘ b
-  | papp_app : forall e d,
-    (d_neutral e) ∙ d ↘ (d_neutral (dn_app e d))
-with PEval : Exp -> Env -> D -> Prop :=
-  | peval_var : forall ρ n,
+  | app_app : forall e d,
+    (d_ne e) ∙ d ↘ (d_ne (dn_app e d))
+with EvalRel : Exp -> Env -> D -> Prop :=
+  | eval_var : forall ρ n,
     ⟦ exp_var n ⟧ ρ ↘ (ρ n)
-  | peval_abs : forall ρ t,
+  | eval_abs : forall ρ t,
     ⟦ exp_abs t ⟧ ρ ↘ (d_abs t ρ)
-  | peval_app : forall ρ r s f a b,
+  | eval_app : forall ρ r s f a b,
     ⟦ r ⟧ ρ ↘ f ->
     ⟦ s ⟧ ρ ↘ a ->
     f ∙ a ↘ b ->
     ⟦ exp_app r s ⟧ ρ ↘ b
-  | peval_ze : forall ρ,
+  | eval_ze : forall ρ,
     ⟦ exp_zero ⟧ ρ ↘ d_zero
-  | peval_suc : forall ρ t d,
+  | eval_suc : forall ρ t d,
     ⟦ t ⟧ ρ ↘ d ->
     ⟦ exp_suc t ⟧ ρ ↘ (d_suc d)
-  | peval_rec : forall ρ ez es en dz ds dn a T,
+  | eval_rec : forall ρ ez es en dz ds dn a T,
     ⟦ ez ⟧ ρ ↘ dz ->
     ⟦ es ⟧ ρ ↘ ds -> 
     ⟦ en ⟧ ρ ↘ dn ->
     rec( dz , ds , dn ) ↘ a ->
-    ⟦ exp_rec T ez es en ⟧ ρ ↘ a (* where does this T come from? *)
-  | peval_subst : forall ρ ρ' t σ a,
+    ⟦ exp_rec T ez es en ⟧ ρ ↘ a (* see p.p 32 : annotate recursion with type T *) 
+  | eval_subst : forall ρ ρ' t σ a,
     ⟦ σ ⟧s ρ ↘ ρ' ->
     ⟦ t ⟧ ρ' ↘ a ->
     ⟦ exp_subst t σ ⟧ ρ' ↘ a
-with PRec : D -> D -> D -> D -> Prop :=
-  | prec_ze : forall dz ds, 
+with RecRel : D -> D -> D -> D -> Prop :=
+  | rec_ze : forall dz ds, 
     rec( dz , ds , d_zero ) ↘ dz
-  | prec_suc : forall dz ds dn f a b,
+  | rec_suc : forall dz ds dn f a b,
     rec( dz , ds , dn) ↘ a ->
     ds ∙ dn ↘ f ->
     f ∙ a ↘ b ->
     rec( dz , ds , d_suc dn ) ↘ b
-  | prec_rec : forall dz ds dn,
-    rec( dz , ds , d_neutral dn) ↘ d_neutral (dn_rec dz ds dn)
-with PSubst : Subst -> Env -> Env -> Prop :=
-  | psubst_shift : forall ρ,
+  | rec_rec : forall dz ds dn,
+    rec( dz , ds , d_ne dn) ↘ d_ne (dn_rec dz ds dn)
+with SubstRel : Subst -> Env -> Env -> Prop :=
+  | subst_shift : forall ρ,
     ⟦ ↑ ⟧s ρ ↘ (drop ρ)
-  | psubst_id : forall ρ,
+  | subst_id : forall ρ,
     ⟦ es_id ⟧s ρ ↘ ρ
-  | psubst_comp : forall ρ ρ' ρ'' σ1 σ2,
+  | subst_comp : forall ρ ρ' ρ'' σ1 σ2,
     ⟦ σ2 ⟧s ρ ↘ ρ' ->
     ⟦ σ1 ⟧s ρ' ↘ ρ'' ->
     ⟦ σ1 ∘ σ2 ⟧s ρ ↘ ρ''
@@ -87,25 +87,25 @@ with PSubst : Subst -> Env -> Env -> Prop :=
     ⟦ σ ⟧s ρ ↘ ρ' ->
     ⟦ t ⟧ ρ ↘ a -> (* why not ρ', but ρ *)
     ⟦ es_ext σ t ⟧s ρ ↘ (ρ ↦ a)
-where "f ∙ a ↘ b" := (PApp f a b) and 
-      "⟦ t ⟧ ρ ↘ a" := (PEval t ρ a) and 
-      "rec( dz , ds , dn ) ↘ d" := (PRec dz ds dn d) and 
-      "⟦ σ ⟧s ρ ↘ ρ'" := (PSubst σ ρ ρ').
+where "f ∙ a ↘ b" := (AppRel f a b) and 
+      "⟦ t ⟧ ρ ↘ a" := (EvalRel t ρ a) and 
+      "rec( dz , ds , dn ) ↘ d" := (RecRel dz ds dn d) and 
+      "⟦ σ ⟧s ρ ↘ ρ'" := (SubstRel σ ρ ρ').
 
-Scheme papp_ind := Induction for PApp Sort Prop
-  with peval_ind := Induction for PEval Sort Prop
-  with prec_ind := Induction for PRec Sort Prop 
-  with psubst_ind := Induction for PSubst Sort Prop.
+Scheme app_ind := Induction for AppRel Sort Prop
+  with eval_ind := Induction for EvalRel Sort Prop
+  with rec_ind := Induction for RecRel Sort Prop 
+  with subst_ind := Induction for SubstRel Sort Prop.
 
-Combined Scheme papp_mutind from papp_ind, peval_ind, prec_ind, psubst_ind.
+Combined Scheme app_eval_rec_subst_mutind from app_ind, eval_ind, rec_ind, subst_ind.
 
-Lemma papp_peval_prec_psubst_det : 
+Lemma app_eval_rec_subst_det : 
   ( forall f a b1, f ∙ a ↘ b1 -> forall b2, f ∙ a ↘ b2 ->  b1 = b2 ) /\
   ( forall t ρ a1, ⟦ t ⟧ ρ ↘ a1 -> forall a2, ⟦ t ⟧ ρ ↘ a2 -> a1 = a2 ) /\
   ( forall dz ds dn d1, rec( dz , ds , dn ) ↘ d1 -> forall d2,  rec( dz , ds , dn ) ↘ d2 -> d1 = d2 ) /\
   ( forall σ ρ ρ1', ⟦ σ ⟧s ρ ↘ ρ1' -> forall ρ2', ⟦ σ ⟧s ρ ↘ ρ2' -> ρ1' = ρ2' ).
 Proof.
-  apply papp_mutind; intros.
+  apply app_eval_rec_subst_mutind; intros.
   - dependent destruction H0; auto.
   - dependent destruction H; auto.
   - dependent destruction H; auto.
@@ -138,34 +138,69 @@ Proof.
     apply H0 in H2. subst. eauto.
 Qed.
 
-Theorem papp_det : forall f a b1 b2, 
+Theorem app_det : forall f a b1 b2, 
   f ∙ a ↘ b1 -> 
   f ∙ a ↘ b2 -> 
   b1 = b2.
 Proof. 
-  specialize papp_peval_prec_psubst_det. intuition. eauto.
+  specialize app_eval_rec_subst_det. intuition. eauto.
 Qed.
 
-Theorem peval_det : forall t ρ a1 a2, 
+Theorem eval_det : forall t ρ a1 a2, 
   ⟦ t ⟧ ρ ↘ a1 -> 
   ⟦ t ⟧ ρ ↘ a2 -> 
   a1 = a2.
 Proof. 
-  specialize papp_peval_prec_psubst_det. intuition. eauto.
+  specialize app_eval_rec_subst_det. intuition. eauto.
 Qed.
 
-Theorem prec_det : forall dz ds dn d1 d2, 
+Theorem rec_det : forall dz ds dn d1 d2, 
   rec( dz , ds , dn ) ↘ d1 -> 
   rec( dz , ds , dn ) ↘ d2 -> 
   d1 = d2.
 Proof.  
-  specialize papp_peval_prec_psubst_det. intuition. eauto.
+  specialize app_eval_rec_subst_det. intuition. eauto.
 Qed.
 
-Theorem psubst_det : forall σ ρ ρ1' ρ2', 
+Theorem subst_det : forall σ ρ ρ1' ρ2', 
   ⟦ σ ⟧s ρ ↘ ρ1' -> 
   ⟦ σ ⟧s ρ ↘ ρ2' -> 
   ρ1' = ρ2'.
 Proof.
-  specialize papp_peval_prec_psubst_det. intuition. eauto.
+  specialize app_eval_rec_subst_det. intuition. eauto.
 Qed.
+
+Reserved Notation "R⁻ⁿᶠ ⦇ n ⦈ d ↘ v"
+  (at level 55, d at next level, no associativity).
+Reserved Notation "R⁻ⁿᵉ ⦇ n ⦈ e ↘ u"
+  (at level 55, e at next level, no associativity).
+Inductive RNfRel : nat -> D -> Intensional.Nf -> Prop :=
+  | rnf_abs : forall t ρ v b n,
+    ⟦ t ⟧ ( ρ ↦ d_ne (dn_l n)) ↘ b ->
+    R⁻ⁿᶠ ⦇ S n ⦈ b ↘ v ->
+    R⁻ⁿᶠ ⦇ n ⦈ (d_abs t ρ) ↘ (Intensional.nf_abs v)
+  | rnf_ne : forall n e u,
+    R⁻ⁿᵉ ⦇ n ⦈ e ↘ u ->
+    R⁻ⁿᶠ ⦇ n ⦈ (d_ne e) ↘ (Intensional.nf_ne u)
+  | rnf_zero : forall n,
+    R⁻ⁿᶠ ⦇ n ⦈ (d_zero) ↘ (Intensional.nf_zero)
+  | rnf_suc : forall d v n,
+    R⁻ⁿᶠ ⦇ n ⦈ d ↘ v ->
+    R⁻ⁿᶠ ⦇ n ⦈ (d_suc d) ↘ (Intensional.nf_suc v)
+with RNeRel : nat -> Dne -> Intensional.Ne -> Prop :=
+  | rne_v : forall n k,
+    R⁻ⁿᵉ ⦇ n ⦈ (dn_l k) ↘ (Intensional.ne_v (n - k - 1))
+  | rne_app : forall n e d u v,
+    R⁻ⁿᵉ ⦇ n ⦈ e ↘ u ->
+    R⁻ⁿᶠ ⦇ n ⦈ d ↘ v ->
+    R⁻ⁿᵉ ⦇ n ⦈ (dn_app e d) ↘ (Intensional.ne_app u v)
+  | rne_rec : forall n dz ds e vz vs u,
+    R⁻ⁿᶠ ⦇ n ⦈ dz ↘ vz ->
+    R⁻ⁿᶠ ⦇ n ⦈ ds ↘ vs ->
+    R⁻ⁿᵉ ⦇ n ⦈ e ↘ u ->
+    R⁻ⁿᵉ ⦇ n ⦈ (dn_rec dz ds e) ↘ (Intensional.ne_rec vs vs u)
+where "R⁻ⁿᶠ ⦇ n ⦈ d ↘ v" := (RNfRel n d v) and 
+      "R⁻ⁿᵉ ⦇ n ⦈ e ↘ u" := (RNeRel n e u).
+
+Definition init_env (n : nat) : Env :=
+  fun i => d_ne (dn_l (n - i - 1)).

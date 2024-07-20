@@ -23,3 +23,17 @@ Notation "σ1 ∘ σ2" := (es_comp σ1 σ2)
  
 Definition q (σ : Subst) := es_ext (σ ∘ ↑) (exp_var 0).
   
+Module Intensional.
+  Inductive Ne : Set :=
+  | ne_v (vi : nat)
+  | ne_app (u : Ne) (v : Nf)
+  | ne_rec (vz vs : Nf) (u : Ne)
+  with Nf : Set :=
+  | nf_ne (u : Ne)
+  | nf_abs (v : Nf)
+  | nf_zero
+  | nf_suc (v : Nf).
+End Intensional.
+
+Module Extensional.
+End Extensional.
