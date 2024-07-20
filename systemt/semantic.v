@@ -170,37 +170,37 @@ Proof.
   specialize app_eval_rec_subst_det. intuition. eauto.
 Qed.
 
-Reserved Notation "R⁻ⁿᶠ ⦇ n ⦈ d ↘ v"
+Reserved Notation " 'Rⁿᶠ' ⦇ n ⦈ d ↘ v"
   (at level 55, d at next level, no associativity).
-Reserved Notation "R⁻ⁿᵉ ⦇ n ⦈ e ↘ u"
+Reserved Notation " 'Rⁿᵉ' ⦇ n ⦈ e ↘ u"
   (at level 55, e at next level, no associativity).
 Inductive RNfRel : nat -> D -> Intensional.Nf -> Prop :=
   | rnf_abs : forall t ρ v b n,
     ⟦ t ⟧ ( ρ ↦ d_ne (dn_l n)) ↘ b ->
-    R⁻ⁿᶠ ⦇ S n ⦈ b ↘ v ->
-    R⁻ⁿᶠ ⦇ n ⦈ (d_abs t ρ) ↘ (Intensional.nf_abs v)
+    Rⁿᶠ ⦇ S n ⦈ b ↘ v ->
+    Rⁿᶠ ⦇ n ⦈ (d_abs t ρ) ↘ (Intensional.nf_abs v)
   | rnf_ne : forall n e u,
-    R⁻ⁿᵉ ⦇ n ⦈ e ↘ u ->
-    R⁻ⁿᶠ ⦇ n ⦈ (d_ne e) ↘ (Intensional.nf_ne u)
+    Rⁿᵉ ⦇ n ⦈ e ↘ u ->
+    Rⁿᶠ ⦇ n ⦈ (d_ne e) ↘ (Intensional.nf_ne u)
   | rnf_zero : forall n,
-    R⁻ⁿᶠ ⦇ n ⦈ (d_zero) ↘ (Intensional.nf_zero)
+    Rⁿᶠ ⦇ n ⦈ (d_zero) ↘ (Intensional.nf_zero)
   | rnf_suc : forall d v n,
-    R⁻ⁿᶠ ⦇ n ⦈ d ↘ v ->
-    R⁻ⁿᶠ ⦇ n ⦈ (d_suc d) ↘ (Intensional.nf_suc v)
+    Rⁿᶠ ⦇ n ⦈ d ↘ v ->
+    Rⁿᶠ ⦇ n ⦈ (d_suc d) ↘ (Intensional.nf_suc v)
 with RNeRel : nat -> Dne -> Intensional.Ne -> Prop :=
   | rne_v : forall n k,
-    R⁻ⁿᵉ ⦇ n ⦈ (dn_l k) ↘ (Intensional.ne_v (n - k - 1))
+    Rⁿᵉ ⦇ n ⦈ (dn_l k) ↘ (Intensional.ne_v (n - k - 1))
   | rne_app : forall n e d u v,
-    R⁻ⁿᵉ ⦇ n ⦈ e ↘ u ->
-    R⁻ⁿᶠ ⦇ n ⦈ d ↘ v ->
-    R⁻ⁿᵉ ⦇ n ⦈ (dn_app e d) ↘ (Intensional.ne_app u v)
+    Rⁿᵉ ⦇ n ⦈ e ↘ u ->
+    Rⁿᶠ ⦇ n ⦈ d ↘ v ->
+    Rⁿᵉ ⦇ n ⦈ (dn_app e d) ↘ (Intensional.ne_app u v)
   | rne_rec : forall n dz ds e vz vs u,
-    R⁻ⁿᶠ ⦇ n ⦈ dz ↘ vz ->
-    R⁻ⁿᶠ ⦇ n ⦈ ds ↘ vs ->
-    R⁻ⁿᵉ ⦇ n ⦈ e ↘ u ->
-    R⁻ⁿᵉ ⦇ n ⦈ (dn_rec dz ds e) ↘ (Intensional.ne_rec vs vs u)
-where "R⁻ⁿᶠ ⦇ n ⦈ d ↘ v" := (RNfRel n d v) and 
-      "R⁻ⁿᵉ ⦇ n ⦈ e ↘ u" := (RNeRel n e u).
+    Rⁿᶠ ⦇ n ⦈ dz ↘ vz ->
+    Rⁿᶠ ⦇ n ⦈ ds ↘ vs ->
+    Rⁿᵉ ⦇ n ⦈ e ↘ u ->
+    Rⁿᵉ ⦇ n ⦈ (dn_rec dz ds e) ↘ (Intensional.ne_rec vs vs u)
+where " 'Rⁿᶠ' ⦇ n ⦈ d ↘ v" := (RNfRel n d v) and 
+      " 'Rⁿᵉ' ⦇ n ⦈ e ↘ u" := (RNeRel n e u).
 
 Scheme rne_ind := Induction for RNeRel Sort Prop
   with rnf_ind := Induction for RNfRel Sort Prop.
@@ -208,8 +208,8 @@ Scheme rne_ind := Induction for RNeRel Sort Prop
 Combined Scheme rne_rnf_mutind from rne_ind, rnf_ind.
 
 Lemma rne_rnf_det : 
-  ( forall n e u1, R⁻ⁿᵉ ⦇ n ⦈ e ↘ u1 -> forall u2, R⁻ⁿᵉ ⦇ n ⦈ e ↘ u2 -> u1 = u2 ) /\ 
-  ( forall n d v1, R⁻ⁿᶠ ⦇ n ⦈ d ↘ v1 -> forall v2, R⁻ⁿᶠ ⦇ n ⦈ d ↘ v2 -> v1 = v2 ).
+  ( forall n e u1, Rⁿᵉ ⦇ n ⦈ e ↘ u1 -> forall u2, Rⁿᵉ ⦇ n ⦈ e ↘ u2 -> u1 = u2 ) /\ 
+  ( forall n d v1, Rⁿᶠ ⦇ n ⦈ d ↘ v1 -> forall v2, Rⁿᶠ ⦇ n ⦈ d ↘ v2 -> v1 = v2 ).
 Proof.
   apply rne_rnf_mutind; intros; eauto.
   - dependent destruction H; eauto.
@@ -229,16 +229,16 @@ Proof.
 Qed.
 
 Corollary rne_det : forall n e u1 u2, 
-  R⁻ⁿᵉ ⦇ n ⦈ e ↘ u1 -> 
-  R⁻ⁿᵉ ⦇ n ⦈ e ↘ u2 -> 
+  Rⁿᵉ ⦇ n ⦈ e ↘ u1 -> 
+  Rⁿᵉ ⦇ n ⦈ e ↘ u2 -> 
   u1 = u2.  
 Proof.
   specialize rne_rnf_det. intuition. eauto.
 Qed.
 
 Corollary rnf_det : forall n d v1 v2, 
-  R⁻ⁿᶠ ⦇ n ⦈ d ↘ v1 -> 
-  R⁻ⁿᶠ ⦇ n ⦈ d ↘ v2 -> 
+  Rⁿᶠ ⦇ n ⦈ d ↘ v1 -> 
+  Rⁿᶠ ⦇ n ⦈ d ↘ v2 -> 
   v1 = v2.
 Proof.
   specialize rne_rnf_det. intuition. eauto.
@@ -246,3 +246,5 @@ Qed.
 
 Definition init_env (n : nat) : Env :=
   fun i => d_ne (dn_l (n - i - 1)).
+
+(* Inductive SemTyping :  *)
