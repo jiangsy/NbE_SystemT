@@ -1,5 +1,5 @@
 Require Import Coq.Program.Equality.
-Require Import nbe.systemt.syntax.
+Require Import nbe.systemt.intensional.syntax.
 
 Inductive D : Set :=
   | d_zero
@@ -174,31 +174,31 @@ Reserved Notation " 'Rⁿᶠ' ⦇ n ⦈ d ↘ v"
   (at level 55, d at next level, no associativity).
 Reserved Notation " 'Rⁿᵉ' ⦇ n ⦈ e ↘ u"
   (at level 55, e at next level, no associativity).
-Inductive RNfRel : nat -> D -> Intensional.Nf -> Prop :=
+Inductive RNfRel : nat -> D -> Nf -> Prop :=
   | rnf_abs : forall t ρ v b n,
     ⟦ t ⟧ ( ρ ↦ d_ne (dn_l n)) ↘ b ->
     Rⁿᶠ ⦇ S n ⦈ b ↘ v ->
-    Rⁿᶠ ⦇ n ⦈ (d_abs t ρ) ↘ (Intensional.nf_abs v)
+    Rⁿᶠ ⦇ n ⦈ (d_abs t ρ) ↘ (nf_abs v)
   | rnf_ne : forall n e u,
     Rⁿᵉ ⦇ n ⦈ e ↘ u ->
-    Rⁿᶠ ⦇ n ⦈ (d_ne e) ↘ (Intensional.nf_ne u)
+    Rⁿᶠ ⦇ n ⦈ (d_ne e) ↘ (nf_ne u)
   | rnf_zero : forall n,
-    Rⁿᶠ ⦇ n ⦈ (d_zero) ↘ (Intensional.nf_zero)
+    Rⁿᶠ ⦇ n ⦈ (d_zero) ↘ (nf_zero)
   | rnf_suc : forall d v n,
     Rⁿᶠ ⦇ n ⦈ d ↘ v ->
-    Rⁿᶠ ⦇ n ⦈ (d_suc d) ↘ (Intensional.nf_suc v)
-with RNeRel : nat -> Dne -> Intensional.Ne -> Prop :=
+    Rⁿᶠ ⦇ n ⦈ (d_suc d) ↘ (nf_suc v)
+with RNeRel : nat -> Dne -> Ne -> Prop :=
   | rne_v : forall n k,
-    Rⁿᵉ ⦇ n ⦈ (dn_l k) ↘ (Intensional.ne_v (n - k - 1))
+    Rⁿᵉ ⦇ n ⦈ (dn_l k) ↘ (ne_v (n - k - 1))
   | rne_app : forall n e d u v,
     Rⁿᵉ ⦇ n ⦈ e ↘ u ->
     Rⁿᶠ ⦇ n ⦈ d ↘ v ->
-    Rⁿᵉ ⦇ n ⦈ (dn_app e d) ↘ (Intensional.ne_app u v)
+    Rⁿᵉ ⦇ n ⦈ (dn_app e d) ↘ (ne_app u v)
   | rne_rec : forall n dz ds e vz vs u,
     Rⁿᶠ ⦇ n ⦈ dz ↘ vz ->
     Rⁿᶠ ⦇ n ⦈ ds ↘ vs ->
     Rⁿᵉ ⦇ n ⦈ e ↘ u ->
-    Rⁿᵉ ⦇ n ⦈ (dn_rec dz ds e) ↘ (Intensional.ne_rec vs vs u)
+    Rⁿᵉ ⦇ n ⦈ (dn_rec dz ds e) ↘ (ne_rec vs vs u)
 where " 'Rⁿᶠ' ⦇ n ⦈ d ↘ v" := (RNfRel n d v) and 
       " 'Rⁿᵉ' ⦇ n ⦈ e ↘ u" := (RNeRel n e u).
 
@@ -244,7 +244,4 @@ Proof.
   specialize rne_rnf_det. intuition. eauto.
 Qed.
 
-Definition init_env (n : nat) : Env :=
-  fun i => d_ne (dn_l (n - i - 1)).
 
-(* Inductive SemTyping :  *)

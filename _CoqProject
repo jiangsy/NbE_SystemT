@@ -1,3 +1,6 @@
 -R . nbe
-./systemt/syntax.v
-./systemt/semantic.v
+./systemt/_.v
+./systemt/intensional/syntax.v
+./systemt/intensional/semantic.v
+./systemt/intensional/soundness.v
+
