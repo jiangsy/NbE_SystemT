@@ -79,8 +79,7 @@ Proof with eauto using SemTypNat, RNeRel, RNfRel.
     apply H in H4. destruct H4 as [b]. destruct H4 as [Hb Happ].
     dependent destruction Happ.
     + eapply H3 with (n:=S n) in Hb. 
-      destruct Hb as [v]. exists (nf_abs v). 
-      eapply rnf_abs; eauto.
+      destruct Hb as [v]...
     + eapply H3 with (n:=n) in Hb.
       destruct Hb as [v]. dependent destruction H4.
       dependent destruction H4...
