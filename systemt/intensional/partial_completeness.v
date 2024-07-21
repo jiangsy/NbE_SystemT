@@ -1,3 +1,5 @@
+Require Import Coq.Program.Equality.
+
 Require Import nbe.systemt.intensional.syntax.
 Require Import nbe.systemt.intensional.semantic.
 
@@ -37,3 +39,23 @@ Fixpoint interp_typ (T : Typ) : SemTyp :=
    | typ_nat => SemNat 
    | typ_arr S' T' => SemArr (interp_typ S') (interp_typ T')
    end.
+
+Notation "⟦ T ⟧T" := (interp_typ T)
+   (at level 55, no associativity).
+
+(* Scheme d_ind := Induction for D Sort Prop
+  with dne_ind := Induction for Dne Sort Prop.
+
+Combined Scheme d_dne_mutind from d_ind, dne_ind. *)
+
+Lemma bot_subset_T_subset_top : forall T,
+   (forall e, e ∈ ⊥ -> ⟦ T ⟧T (d_ne e)) /\
+   (forall d, ⟦ T ⟧T d -> d ∈ ⊤ ).
+Proof with eauto using SemNat, RNeRel, RNfRel.
+   intros. induction T; split; try simpl...
+   - intros. dependent induction H.
+     + unfold Top. intros...
+     + admit.
+     + admit.
+   - intros. admit.
+Admitted.

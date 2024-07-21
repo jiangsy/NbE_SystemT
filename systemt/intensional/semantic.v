@@ -11,6 +11,9 @@ with Dne : Set :=
   | dn_rec (z s : D) (dn : Dne)
   | dn_app (dn : Dne) (d : D).
 
+Notation " ( `ƛ` t ) ρ " := (d_abs t ρ)
+  (at level 55).
+
 Definition Env := nat -> D.
 
 Definition add (ρ : Env) (d : D) : Env :=

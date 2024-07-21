@@ -23,6 +23,9 @@ with Exp : Set :=
 
 Notation "'ℕ'" := typ_nat.
 
+Notation "`λ` t" := (exp_abs t)
+  (at level 55). 
+
 Notation "↑" := es_shift.
 
 Notation "σ1 ∘ σ2" := (es_comp σ1 σ2) 
