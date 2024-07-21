@@ -1,3 +1,4 @@
+Require Import Coq.Lists.List.
 Require Import Coq.Program.Equality.
 
 Require Import nbe.systemt.intensional.syntax.
@@ -99,3 +100,23 @@ Proof.
   specialize bot_subset_T_subset_top. intros. specialize (H T). intuition. 
 Qed.
   
+Definition SemApp (f a : D) (B : SemTyp) : Prop := 
+  exists b, B b /\ f ∙ a ↘ b.
+
+Definition SemRec (dz ds dn : D) (B : SemTyp) : Prop :=
+  exists b, B b /\ rec( dz , ds , dn ) ↘ b.
+
+Definition SemEval (t : Exp) (ρ : Env) (B : SemTyp) : Prop :=
+  exists b, B b /\ ⟦ t ⟧ ρ ↘ b.
+
+Fixpoint interp_ctx (Γ : Ctx) : SemEnv :=
+  match Γ with 
+  | nil => fun Δ => True
+  | (T :: Γ') => fun Δ => ⟦ T ⟧T (Δ 0) /\ interp_ctx Γ' (drop Δ) 
+  end.
+
+Notation "⟦ Γ ⟧Γ" := (interp_ctx Γ)
+  (at level 55, no associativity).
+
+Definition SemTyping (Γ : Ctx) (t : Exp) (T : Typ) : Prop :=
+  forall ρ, ⟦ Γ ⟧Γ ρ -> exists a, ⟦ t ⟧ ρ ↘ a /\ ⟦ T ⟧T a.
