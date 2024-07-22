@@ -120,3 +120,56 @@ Notation "⟦ Γ ⟧Γ" := (interp_ctx Γ)
 
 Definition SemTyping (Γ : Ctx) (t : Exp) (T : Typ) : Prop :=
   forall ρ, ⟦ Γ ⟧Γ ρ -> exists a, ⟦ t ⟧ ρ ↘ a /\ ⟦ T ⟧T a.
+
+Notation "Γ ⊨ t : T" := (SemTyping Γ t T)
+  (at level 55, t at next level, no associativity).
+
+Lemma sem_typing_var_intro : forall Γ i T,
+  nth_error Γ i = Some T ->
+  Γ ⊨ (exp_var i) : T.
+Proof.
+  intros. generalize dependent i.
+  induction Γ; intros.
+  - destruct i; simpl in H; inversion H.
+  - destruct i; simpl in H; eauto.
+    + inversion H. subst. unfold SemTyping. intros. simpl in H0. 
+      exists (ρ 0); split; eauto.
+      * constructor.
+      * intuition.
+    + apply IHΓ in H.
+      unfold SemTyping in *. intros.
+      simpl in H0. intuition.
+      apply H in H2. destruct H2 as [b [Heval Htyp]].
+      exists b; split; eauto.
+      dependent destruction Heval. unfold drop. econstructor.
+Qed.
+
+Lemma sem_typing_abs_intro : forall Γ t S T,
+  (S :: Γ) ⊨ t : T ->
+  Γ ⊨ (exp_abs t) : S → T.
+Proof.
+  intros. unfold SemTyping.
+  intros. exists ((ƛ t) ρ). split.
+  - econstructor.
+  - unfold interp_typ; fold interp_typ.
+    unfold SemTypArr. intros.
+    unfold SemTyping in H.
+    assert (⟦ S :: Γ ⟧Γ (ρ ↦ a))...
+    + econstructor; auto.
+    + apply H in H2. destruct H2 as [b [Heval Htyp]]...
+      exists b; split; eauto.
+      econstructor; eauto.
+Qed.
+
+Lemma sem_typing_suc_intro : forall Γ t,
+  Γ ⊨ t : ℕ ->
+  Γ ⊨ (exp_suc t) : ℕ.
+Proof.
+  intros. unfold SemTyping in *.
+  intros. apply H in H0.
+  destruct H0 as [a [Heval Htyp]].
+  exists (d_suc a). split; eauto.
+  eauto using EvalRel.
+  unfold interp_typ in *.
+  eauto using SemTypNat.
+Qed.

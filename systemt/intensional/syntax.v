@@ -23,7 +23,7 @@ with Exp : Set :=
 
 Notation "'ℕ'" := typ_nat.
 
-Notation "`λ` t" := (exp_abs t)
+Notation "'λ' t" := (exp_abs t)
   (at level 55). 
 
 Notation "↑" := es_shift.

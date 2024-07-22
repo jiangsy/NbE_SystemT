@@ -2,5 +2,5 @@
 ./systemt/_.v
 ./systemt/intensional/syntax.v
 ./systemt/intensional/semantic.v
-./systemt/intensional/soundness.v
+./systemt/intensional/partial_completeness.v
 
