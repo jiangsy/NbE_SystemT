@@ -68,7 +68,7 @@ with EvalRel : Exp -> Env -> D -> Prop :=
   | eval_subst : forall ρ ρ' t σ a,
     ⟦ σ ⟧s ρ ↘ ρ' ->
     ⟦ t ⟧ ρ' ↘ a ->
-    ⟦ exp_subst t σ ⟧ ρ' ↘ a
+    ⟦ exp_subst t σ ⟧ ρ ↘ a
 with RecRel : Typ -> D -> D -> D -> D -> Prop :=
   | rec_ze : forall az aₛ T, 
     rec( T , az , aₛ , d_zero ) ↘ az
@@ -111,8 +111,29 @@ Lemma app_eval_rec_subst_det :
   ( forall T az aₛ an d1, rec( T , az , aₛ , an ) ↘ d1 -> forall d2,  rec( T , az , aₛ , an ) ↘ d2 -> d1 = d2 ) /\
   ( forall σ ρ ρ1', ⟦ σ ⟧s ρ ↘ ρ1' -> forall ρ2', ⟦ σ ⟧s ρ ↘ ρ2' -> ρ1' = ρ2' ).
 Proof.
-  apply app_eval_rec_subst_mutind; intros.
-Admitted.
+  apply app_eval_rec_subst_mutind; intros; 
+    try solve [dependent destruction H; eauto; try apply f_equal; try apply f_equal2; eauto];
+    try solve [dependent destruction H0; eauto;  try apply f_equal; try apply f_equal2; eauto].
+  - dependent destruction H2. 
+    apply H in H2_.
+    apply H0 in H2_0. subst.
+    apply H1 in H2; eauto.
+  - dependent destruction H3; eauto.
+    apply H in H3_.
+    apply H0 in H3_0. 
+    apply H1 in H3_1. subst.
+    eauto.
+  - dependent destruction H1.
+    apply H in H1. subst.
+    apply H0 in H2; eauto.
+  - dependent destruction H2.
+    apply H0 in H3. subst.
+    apply H in H2. subst. eauto.
+  - dependent destruction H1.
+    apply H in H1_. subst. eauto.
+  - dependent destruction H1.
+    apply H in H1. subst. apply f_equal2; eauto.
+Qed.
 
 Theorem app_det : forall f a b1 b2, 
   f ∙ a ↘ b1 -> 

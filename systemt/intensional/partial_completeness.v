@@ -265,3 +265,9 @@ Proof.
   intros. unfold SemSubstTyping. intros.
   exists ρ. intuition.
 Qed.
+
+Definition SemEqExp (Γ : Ctx) (t t' : Exp) (T : Typ) : Prop :=
+  forall ρ, ⟦ Γ ⟧Γ ρ -> exists a a', ⟦ t ⟧ ρ ↘ a /\ ⟦ t' ⟧ ρ ↘ a' /\ ⟦ T ⟧T a /\ ⟦ T ⟧T a' /\ a = a'. 
+
+Definition SemEqSubst (Γ : Ctx) (σ σ' : Subst) (Δ : Ctx) : Prop :=
+  forall ρ, ⟦ Γ ⟧Γ ρ -> exists ρ1' ρ2', ⟦ σ ⟧s ρ ↘ ρ1' /\ ⟦ σ' ⟧s ρ ↘ ρ2' /\ ⟦ Δ ⟧Γ ρ1' /\ ⟦ Δ ⟧Γ ρ2' /\ ρ1' = ρ2'.
