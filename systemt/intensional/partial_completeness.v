@@ -124,7 +124,7 @@ Definition SemTyping (Γ : Ctx) (t : Exp) (T : Typ) : Prop :=
 Notation "Γ ⊨ t : T" := (SemTyping Γ t T)
   (at level 55, t at next level, no associativity).
 
-Hint Constructors EvalRel AppRel SemTypNat : core.
+Hint Constructors EvalRel AppRel RecRel RNfRel RNeRel SemTypNat : core.
 
 Lemma sem_typing_var : forall Γ i T,
   nth_error Γ i = Some T ->
@@ -177,4 +177,58 @@ Proof.
   destruct H0 as [a [Heval Htyp]].
   exists (d_suc a). split; eauto.
   unfold interp_typ in *; auto.
+Qed.
+
+Lemma sem_typing_app : forall Γ r s S T,
+  Γ ⊨ r : S → T ->
+  Γ ⊨ s : S ->
+  Γ ⊨ (exp_app r s) : T.
+Proof.
+  intros. unfold SemTyping in *. intros.
+  apply H in H1 as Hf. 
+  destruct Hf as [f [Hevalf Htypf]].
+  apply H0 in H1 as Ha.
+  destruct Ha as [a [Hevala Htypa]].
+  simpl in Htypf. unfold SemTypArr in Htypf.
+  apply Htypf in Htypa. destruct Htypa as [b [Hevalb Htypb]].
+  exists b. split; auto.
+  eauto.
+Qed. 
+
+Lemma sem_rec_rec : forall dz ds dn T,
+  ⟦ T ⟧T dz ->
+  ⟦ ℕ → T → T ⟧T ds ->
+  ⟦ ℕ ⟧T dn ->
+  SemRec dz ds dn (⟦ T ⟧T).
+Proof.
+  intros. induction H1; unfold SemRec in *; intros.
+  - exists dz; eauto.
+  - destruct IHSemTypNat as [dn [Htypn Hrecn]].
+    simpl in H0. unfold SemTypArr in H0.
+    apply H0 in H1. destruct H1 as [df [Htypf Happf]].
+    apply Htypf in Htypn. destruct Htypn as [db [Htypb Happb]].
+    eauto.
+  - exists (d_ne (dn_rec dz ds e)). split; eauto.
+    apply bot_subset_T. 
+    apply T_subset_top in H.
+    apply T_subset_top in H0.
+    unfold SemTypBot in *.
+    unfold SemTypTop in *. intros.
+    specialize (H n). specialize (H0 n). specialize (H1 n).
+    destruct H. destruct H0. destruct H1. eauto.
+Qed.
+
+Lemma sem_typing_rec : forall Γ tz ts tn T,
+  Γ ⊨ tz : T ->
+  Γ ⊨ ts : ℕ → T → T ->
+  Γ ⊨ tn : ℕ ->
+  Γ ⊨ exp_rec T tz ts tn : T.
+Proof.
+  intros. unfold SemTyping in *. intros.
+  apply H1 in H2 as Hdn. destruct Hdn as [dn [Hevaln Htypn]]. 
+  apply H in H2 as Hdz. destruct Hdz as [dz [Hevalz Htypz]].
+  apply H0 in H2 as Hds. destruct Hds as [ds [Hevals Htyps]].
+  eapply sem_rec_rec in Htyps; eauto.
+  unfold SemRec in Htyps. destruct Htyps as [b [Hevalb Htypb]].
+  exists b; eauto.
 Qed.
