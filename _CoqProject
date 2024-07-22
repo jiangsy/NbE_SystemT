@@ -3,4 +3,5 @@
 ./systemt/intensional/syntax.v
 ./systemt/intensional/semantic.v
 ./systemt/intensional/partial_completeness.v
+./systemt/extensional/syntax.v
 
