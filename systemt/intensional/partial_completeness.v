@@ -124,7 +124,7 @@ Definition SemTyping (Γ : Ctx) (t : Exp) (T : Typ) : Prop :=
 Notation "Γ ⊨ t : T" := (SemTyping Γ t T)
   (at level 55, t at next level, no associativity).
 
-Hint Constructors EvalRel AppRel RecRel RNfRel RNeRel SemTypNat : core.
+Hint Constructors EvalRel AppRel RecRel SubstRel RNfRel RNeRel SemTypNat : core.
 
 Lemma sem_typing_var : forall Γ i T,
   nth_error Γ i = Some T ->
@@ -231,4 +231,37 @@ Proof.
   eapply sem_rec_rec in Htyps; eauto.
   unfold SemRec in Htyps. destruct Htyps as [b [Hevalb Htypb]].
   exists b; eauto.
+Qed.
+
+Definition SemSubstTyping (Γ : Ctx) (σ : Subst) (Δ : Ctx) : Prop :=
+  forall ρ, ⟦ Γ ⟧Γ ρ -> exists ρ', ⟦ σ ⟧s ρ ↘ ρ' /\ ⟦ Δ ⟧Γ ρ'.
+
+Notation "Γ ⊨s σ : Δ" := (SemSubstTyping Γ σ Δ)
+  (at level 55, σ at next level, no associativity).
+
+Lemma sem_typing_subst : forall Γ Δ σ t T,
+  Γ ⊨s σ : Δ ->
+  Δ ⊨ t : T ->
+  Γ ⊨ (exp_subst t σ) : T.
+Proof.
+  intros. unfold SemTyping in *.
+  unfold SemSubstTyping in *. intros.
+  apply H in H1 as Hsubst. destruct Hsubst as [ρ' [Heval Hsem]].
+  apply H0 in Hsem.  
+  destruct Hsem as [a [Hevala Htyp]].
+  exists a. split; eauto.
+Qed.
+
+Lemma sem_subst_typing_shift : forall Γ S,
+  (S :: Γ) ⊨s ↑ : Γ.
+Proof.
+  intros. unfold SemSubstTyping. intros.
+  simpl in H. intuition. exists (drop ρ); split; eauto.
+Qed.
+
+Lemma sem_subst_typing_id : forall Γ,
+  Γ ⊨s es_id : Γ.
+Proof.
+  intros. unfold SemSubstTyping. intros.
+  exists ρ. intuition.
 Qed.

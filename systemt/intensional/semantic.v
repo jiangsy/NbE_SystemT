@@ -66,7 +66,7 @@ with EvalRel : Exp -> Env -> D -> Prop :=
   | eval_subst : forall ρ ρ' t σ a,
     ⟦ σ ⟧s ρ ↘ ρ' ->
     ⟦ t ⟧ ρ' ↘ a ->
-    ⟦ exp_subst t σ ⟧ ρ' ↘ a
+    ⟦ exp_subst t σ ⟧ ρ ↘ a
 with RecRel : D -> D -> D -> D -> Prop :=
   | rec_ze : forall dz ds, 
     rec( dz , ds , d_zero ) ↘ dz
@@ -126,7 +126,7 @@ Proof.
     apply H1 in H3_1.
     subst. eauto.
   - dependent destruction H1.
-    eauto.
+    apply H in H1. subst. eauto.
   - dependent destruction H. auto.
   - dependent destruction H2.
     apply H0 in H3. subst.
