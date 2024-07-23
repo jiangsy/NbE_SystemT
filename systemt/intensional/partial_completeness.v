@@ -266,8 +266,45 @@ Proof.
   exists ρ. intuition.
 Qed.
 
+Lemma sem_subst_comp : forall Γ1 Γ2 Γ3 σ τ,
+  Γ1 ⊨s τ : Γ2 ->
+  Γ2 ⊨s σ : Γ3 ->
+  Γ1 ⊨s σ ∘ τ : Γ3.
+Proof.
+  intros * Htau Hsig. unfold SemSubstTyping in *. intros.
+  apply Htau in H. destruct H as [ρ' [Hevalρ Hctxρ]].
+  apply Hsig in Hctxρ. destruct Hctxρ as [ρ'' [Hevalρ'' Hctxρ'']].
+  eauto.
+Qed.
+
+Lemma sem_subst_ext : forall Γ Δ σ s S,
+  Γ ⊨s σ : Δ ->
+  Γ ⊨ s : S ->
+  Γ ⊨s es_ext σ s : (S :: Δ).
+Proof.
+  intros * Hsig Hs. unfold SemSubstTyping in *. unfold SemTyping in *.
+  intros.
+  apply Hsig in H as Hsig1. destruct Hsig1 as [ρ' [Hevalρ' Hctxρ']].
+  apply Hs in H as Hs1. destruct Hs1 as [a [Hevala Htypa]].
+  exists (ρ' ↦ a); split; simpl.
+  - econstructor; auto.
+  - eauto.
+Qed.  
+
 Definition SemEqExp (Γ : Ctx) (t t' : Exp) (T : Typ) : Prop :=
   forall ρ, ⟦ Γ ⟧Γ ρ -> exists a a', ⟦ t ⟧ ρ ↘ a /\ ⟦ t' ⟧ ρ ↘ a' /\ ⟦ T ⟧T a /\ ⟦ T ⟧T a' /\ a = a'. 
 
+Notation "Γ ⊨ t ≈ t' : T" := (SemEqExp Γ t t' T)
+  (at level 55, t at next level, t' at next level, no associativity).
+
 Definition SemEqSubst (Γ : Ctx) (σ σ' : Subst) (Δ : Ctx) : Prop :=
   forall ρ, ⟦ Γ ⟧Γ ρ -> exists ρ1' ρ2', ⟦ σ ⟧s ρ ↘ ρ1' /\ ⟦ σ' ⟧s ρ ↘ ρ2' /\ ⟦ Δ ⟧Γ ρ1' /\ ⟦ Δ ⟧Γ ρ2' /\ ρ1' = ρ2'.
+
+Lemma sem_eq_exp_refl : forall Γ t T,
+  Γ ⊨ t : T ->
+  Γ ⊨ t ≈ t : T.
+Proof.
+  intros. unfold SemTyping in *. unfold SemEqExp. intros.
+  apply H in H0. destruct H0 as [a [Heval Htyp]].
+  exists a, a; repeat split; auto.
+Qed.

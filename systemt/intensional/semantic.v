@@ -89,7 +89,7 @@ with SubstRel : Subst -> Env -> Env -> Prop :=
   | psusbt_ext : forall ρ ρ' σ t a,
     ⟦ σ ⟧s ρ ↘ ρ' ->
     ⟦ t ⟧ ρ ↘ a -> (* why not ρ', but ρ *)
-    ⟦ es_ext σ t ⟧s ρ ↘ (ρ ↦ a)
+    ⟦ es_ext σ t ⟧s ρ ↘ (ρ' ↦ a)
 where "f ∙ a ↘ b" := (AppRel f a b) and 
       "⟦ t ⟧ ρ ↘ a" := (EvalRel t ρ a) and 
       "rec( dz , ds , dn ) ↘ d" := (RecRel dz ds dn d) and 
@@ -137,7 +137,8 @@ Proof.
   - dependent destruction H. auto.
   - dependent destruction H1.
     apply H in H1_. subst. eauto.
-  - dependent destruction H1. 
+  - dependent destruction H1.
+    apply H in H1. 
     apply H0 in H2. subst. eauto.
 Qed.
 
@@ -246,5 +247,3 @@ Corollary rnf_det : forall n d v1 v2,
 Proof.
   specialize rne_rnf_det. intuition. eauto.
 Qed.
-
-
