@@ -222,7 +222,7 @@ Lemma sem_typing_rec : forall Γ tz ts tn T,
   Γ ⊨ tz : T ->
   Γ ⊨ ts : ℕ → T → T ->
   Γ ⊨ tn : ℕ ->
-  Γ ⊨ exp_rec T tz ts tn : T.
+  Γ ⊨ exp_rec tz ts tn : T.
 Proof.
   intros. unfold SemTyping in *. intros.
   apply H1 in H2 as Hdn. destruct Hdn as [dn [Hevaln Htypn]]. 
@@ -373,3 +373,42 @@ Proof.
   destruct H2 as [b [Hevalb Htypb]].
   exists b, b. intuition; eauto.
 Qed.
+
+Lemma lookup_env : forall Γ i T ρ,
+  nth_error Γ i = Some T ->
+  ⟦ Γ ⟧Γ ρ ->
+  exists a, ρ i = a /\ ⟦ T ⟧T a.
+Proof.
+  intro Γ. induction Γ; intros.
+  - destruct i; simpl in H; inversion H.
+  - destruct i; simpl in H.
+    + dependent destruction H. simpl in H0.
+      exists (ρ 0); simpl in *; intuition.
+    + simpl in H0. intuition. eapply IHΓ in H; eauto.
+      destruct H as [a' [Hlookup Htyp]].
+      exists a'; split; eauto.
+Qed.
+
+Lemma sem_eq_exp_var_shift : forall Γ S T i,
+  nth_error Γ i = Some T ->
+  (S :: Γ) ⊨ exp_subst (exp_var i) ↑ ≈ exp_var (1 + i) : T.
+Proof.
+  intros. unfold SemEqExp. intros.
+  assert (nth_error (S :: Γ) (1 + i) = Some T) by (simpl; auto).
+  eapply lookup_env in H1; eauto.
+  destruct H1 as [a [Hlookup Htyp]].
+  exists a, a. intuition; eauto.
+  - econstructor; eauto. simpl.
+    assert ((drop ρ) i = a). { unfold drop. auto. }
+    rewrite <- H1; auto.
+  - rewrite <- Hlookup. eauto.
+Qed.
+
+Lemma seq_eq_exp_subst_id : forall Γ t T,
+  Γ ⊨ t : T ->
+  Γ ⊨ exp_subst t es_id ≈ t : T.
+Proof.
+  intros. unfold SemTyping in *. unfold SemEqExp. intros.
+  apply H in H0. destruct H0 as [a [Heval Htyp]].
+  exists a, a; intuition. eauto.
+Qed. 

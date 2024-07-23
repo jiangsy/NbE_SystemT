@@ -57,12 +57,12 @@ with EvalRel : Exp -> Env -> D -> Prop :=
   | eval_suc : forall ρ t d,
     ⟦ t ⟧ ρ ↘ d ->
     ⟦ exp_suc t ⟧ ρ ↘ (d_suc d)
-  | eval_rec : forall ρ ez es en dz ds dn a T,
+  | eval_rec : forall ρ ez es en dz ds dn a,
     ⟦ ez ⟧ ρ ↘ dz ->
     ⟦ es ⟧ ρ ↘ ds -> 
     ⟦ en ⟧ ρ ↘ dn ->
     rec( dz , ds , dn ) ↘ a ->
-    ⟦ exp_rec T ez es en ⟧ ρ ↘ a (* see p.p 32 : annotate recursion with type T *) 
+    ⟦ exp_rec ez es en ⟧ ρ ↘ a (* see p.p 32 : annotate recursion with type T *) 
   | eval_subst : forall ρ ρ' t σ a,
     ⟦ σ ⟧s ρ ↘ ρ' ->
     ⟦ t ⟧ ρ' ↘ a ->
