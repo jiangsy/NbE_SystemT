@@ -8,7 +8,7 @@ Inductive D : Set :=
   | d_refl (T: Typ) (e : Dne)
 with Dne : Set :=
   | dne_l (n : nat) 
-  | dne_rec (dz ds : Dnf) (dn : Dne)
+  | dne_rec (T : Typ) (dz ds : Dnf) (dn : Dne)
   | dne_app (e : Dne) (d : Dnf)
 with Dnf : Set :=
   | dnf_reif (T : Typ) (a : D).
@@ -78,7 +78,7 @@ with RecRel : Typ -> D -> D -> D -> D -> Prop :=
     f ∙ a ↘ b ->
     rec( T , az , aₛ , d_suc an ) ↘ b
   | rec_rec : forall az aₛ e T,
-    rec( T , az , aₛ , d_refl ℕ e) ↘ d_refl T (dne_rec (dnf_reif T az) (dnf_reif (ℕ → T → T) aₛ) e)
+    rec( T , az , aₛ , d_refl ℕ e) ↘ d_refl T (dne_rec T (dnf_reif T az) (dnf_reif (ℕ → T → T) aₛ) e)
 with SubstRel : Subst -> Env -> Env -> Prop :=
   | subst_shift : forall ρ,
     ⟦ ↑ ⟧s ρ ↘ (drop ρ)
@@ -166,3 +166,35 @@ Theorem subst_det : forall σ ρ ρ1' ρ2',
 Proof.
   specialize app_eval_rec_subst_det. intuition. eauto.
 Qed. 
+
+Reserved Notation " 'Rⁿᶠ' ⦇ n ⦈ d ↘ v"
+  (at level 55, d at next level, no associativity).
+Reserved Notation " 'Rⁿᵉ' ⦇ n ⦈ e ↘ u"
+  (at level 55, e at next level, no associativity).
+Inductive RNfRel : nat -> Dnf -> Nf -> Prop := 
+  | rnf_abs : forall f b n t S T,
+    f ∙ (d_refl S (dne_l n)) ↘ b ->
+    Rⁿᶠ ⦇ 1 + n ⦈ (dnf_reif T b) ↘ t ->
+    Rⁿᶠ ⦇ n ⦈ (dnf_reif (S → T) f) ↘ (nf_abs t)
+  | rnf_zero : forall n,
+    Rⁿᶠ ⦇ n ⦈ (dnf_reif ℕ d_zero) ↘ nf_zero
+  | rnf_suc : forall n a t,
+    Rⁿᶠ ⦇ n ⦈ (dnf_reif ℕ a) ↘ t ->
+    Rⁿᶠ ⦇ n ⦈ (dnf_reif ℕ (d_suc a)) ↘ (nf_suc t)
+  | rnf_ne : forall n e t,
+    Rⁿᵉ ⦇ n ⦈ e ↘ t ->
+    Rⁿᶠ ⦇ n ⦈ (dnf_reif ℕ (d_refl ℕ e)) ↘ (nf_ne t)
+with RNeRel : nat -> Dne -> Ne -> Prop :=
+  | rne_v : forall n k,
+    Rⁿᵉ ⦇ n ⦈ (dne_l k) ↘ (ne_v (n - k - 1))
+  | rne_app : forall n e d u v,
+    Rⁿᵉ ⦇ n ⦈ e ↘ u ->
+    Rⁿᶠ ⦇ n ⦈ d ↘ v ->
+    Rⁿᵉ ⦇ n ⦈ (dne_app e d) ↘ (ne_app u v)
+  | rne_rec : forall n dz ds e vz vs u T,
+    Rⁿᶠ ⦇ n ⦈ dz ↘ vz ->
+    Rⁿᶠ ⦇ n ⦈ ds ↘ vs ->
+    Rⁿᵉ ⦇ n ⦈ e ↘ u ->
+    Rⁿᵉ ⦇ n ⦈ (dne_rec T dz ds e) ↘ (ne_rec T vs vs u)
+where " 'Rⁿᶠ' ⦇ n ⦈ d ↘ v" := (RNfRel n d v) and 
+      " 'Rⁿᵉ' ⦇ n ⦈ e ↘ u" := (RNeRel n e u).
