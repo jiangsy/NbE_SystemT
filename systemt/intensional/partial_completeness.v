@@ -308,3 +308,68 @@ Proof.
   apply H in H0. destruct H0 as [a [Heval Htyp]].
   exists a, a; repeat split; auto.
 Qed.
+
+Lemma sem_eq_exp_symm : forall Γ t t' T,
+  Γ ⊨ t ≈ t' : T ->
+  Γ ⊨ t' ≈ t : T.
+Proof.
+  intros. unfold SemEqExp in *. intros.
+  apply H in H0. destruct H0 as [a [a']].
+  exists a', a. intuition.
+Qed.
+
+Lemma sem_eq_exp_trans : forall Γ t t' t'' T,
+  Γ ⊨ t ≈ t' : T ->
+  Γ ⊨ t' ≈ t'' : T ->
+  Γ ⊨ t ≈ t'' : T.
+Proof.
+  intros. unfold SemEqExp in *. intros.
+  apply H in H1 as Htt'.
+  apply H0 in H1 as Ht't''.
+  destruct Htt' as [a [a1']].
+  destruct Ht't'' as [a2' [a'']].
+  exists a, a''. intuition.
+  eapply eval_det in H2; eauto. subst. auto.
+Qed.
+
+Lemma sem_eq_exp_suc : forall Γ t t',
+  Γ ⊨ t ≈ t' : ℕ ->
+  Γ ⊨ (exp_suc t) ≈ (exp_suc t') : ℕ.
+Proof.
+  intros. unfold SemEqExp in *. intros.
+  apply H in H0.
+  destruct H0 as [a [a']].
+  exists (d_suc a), (d_suc a'). intuition; simpl in *; eauto.
+  apply f_equal. auto.
+Qed.
+
+Lemma sem_eq_exp_app : forall Γ r r' s s' S T,
+  Γ ⊨ r ≈ r' : S → T ->
+  Γ ⊨ s ≈ s' : S ->
+  Γ ⊨ (exp_app r s) ≈ (exp_app r' s') : T.
+Proof.
+  intros. unfold SemEqExp in *. intros.
+  apply H0 in H1 as Hs. 
+  destruct Hs as [a [a']]. intuition. subst. clear H5.
+  apply H in H1 as Hf.
+  destruct Hf as [f [f']]. intuition. subst. clear H8.
+  simpl in H7. unfold SemTypArr in H7.
+  apply H7 in H4.
+  destruct H4 as [b [Htyp Happ]].
+  exists b, b. intuition; eauto.
+Qed.
+
+Lemma sem_eq_exp_beta : forall Γ s t S T,
+  (S :: Γ) ⊨ t : T ->
+  Γ ⊨ s : S ->
+  Γ ⊨ exp_app (exp_abs t) s ≈ exp_subst t (es_ext es_id s) : T.
+Proof.
+  intros. unfold SemEqExp. unfold SemTyping in *.
+  intros. 
+  apply H0 in H1 as Hs.
+  destruct Hs as [a [Hevala Htypa]].
+  assert ( ⟦ S :: Γ ⟧Γ (ρ ↦ a)) by (simpl; auto).
+  apply H in H2.
+  destruct H2 as [b [Hevalb Htypb]].
+  exists b, b. intuition; eauto.
+Qed.
