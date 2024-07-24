@@ -3,9 +3,6 @@ Require Import nbe.systemt.extensional.semantic.
 
 Definition SemTyp := D -> D -> Prop.
 
-Notation "d ∈! T" := (T d d) 
- (at level 55, no associativity).
-
 Definition SemTypTop (d d' : Dnf) : Prop :=
   forall n, exists w, Rⁿᶠ ⦇ n ⦈ d ↘ w /\ Rⁿᶠ ⦇ n ⦈ d' ↘ w.
 
@@ -131,8 +128,11 @@ Lemma sem_abs_intros : forall S T A B,
   S ⊩ A -> T ⊩ B -> (S → T) ⊩ (A ⇒ B).
 Proof.
   intros. unfold Realize in *. split.
-  - intros. unfold SemAbs in H1. admit.
+  - intros. apply sem_typ_top_abs. intros. unfold SemAbs in H1.  
+    intuition.
+    apply H4 in H2. apply H1 in H2. 
+    destruct H2 as [b [b']]. exists b, b'. intuition.
   - intros. unfold SemAbs. intros.
     exists (d_refl T (dne_app e (dnf_reif S a))), (d_refl T (dne_app e' (dnf_reif S a'))); intuition; eauto.
-    + eapply H5. eapply sem_typ_bot_app; eauto.
-Admitted.
+    + eauto using sem_typ_bot_app.
+Qed.
