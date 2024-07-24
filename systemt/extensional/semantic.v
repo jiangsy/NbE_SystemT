@@ -198,3 +198,46 @@ with RNeRel : nat -> Dne -> Ne -> Prop :=
     Rⁿᵉ ⦇ n ⦈ (dne_rec T dz ds e) ↘ (ne_rec T vs vs u)
 where " 'Rⁿᶠ' ⦇ n ⦈ d ↘ v" := (RNfRel n d v) and 
       " 'Rⁿᵉ' ⦇ n ⦈ e ↘ u" := (RNeRel n e u).
+
+Scheme rne_ind := Induction for RNeRel Sort Prop
+  with rnf_ind := Induction for RNfRel Sort Prop.
+
+Combined Scheme rne_rnf_mutind from rne_ind, rnf_ind.
+
+Lemma rne_rnf_det : 
+  ( forall n e u1, Rⁿᵉ ⦇ n ⦈ e ↘ u1 -> forall u2, Rⁿᵉ ⦇ n ⦈ e ↘ u2 -> u1 = u2 ) /\ 
+  ( forall n d v1, Rⁿᶠ ⦇ n ⦈ d ↘ v1 -> forall v2, Rⁿᶠ ⦇ n ⦈ d ↘ v2 -> v1 = v2 ).
+Proof.
+  apply rne_rnf_mutind; intros; eauto.
+  - dependent destruction H; eauto.
+  - dependent destruction H1; eauto.
+    apply f_equal2; eauto.
+  - dependent destruction H2.
+    apply f_equal3; eauto.
+  - dependent destruction H0.
+    eapply app_det in a; eauto. subst.
+    apply H in H1. subst. auto.
+  - dependent destruction H. auto.
+  - dependent destruction H0.
+    apply H in H0. 
+    apply f_equal; eauto.
+  - dependent destruction H0.
+    apply H in H0.
+    apply f_equal; auto.
+Qed.
+
+Corollary rne_det : forall n e u1 u2, 
+  Rⁿᵉ ⦇ n ⦈ e ↘ u1 -> 
+  Rⁿᵉ ⦇ n ⦈ e ↘ u2 -> 
+  u1 = u2.  
+Proof.
+  specialize rne_rnf_det. intuition. eauto.
+Qed.
+
+Corollary rnf_det : forall n d v1 v2, 
+  Rⁿᶠ ⦇ n ⦈ d ↘ v1 -> 
+  Rⁿᶠ ⦇ n ⦈ d ↘ v2 -> 
+  v1 = v2.
+Proof.
+  specialize rne_rnf_det. intuition. eauto.
+Qed.

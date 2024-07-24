@@ -231,7 +231,7 @@ with SubstEq : Ctx -> Subst -> Subst -> Ctx -> Prop :=
     Γ ⊢s σ2 ≈ σ3 : Δ ->
     Γ ⊢s σ1 ≈ σ3 : Δ
 where "Γ ⊢ t ≈ t' : T" := (ExpEq Γ t t' T) and 
-    "Γ ⊢s σ ≈ σ' : Δ" := (SubstEq Γ σ σ' Δ).
+      "Γ ⊢s σ ≈ σ' : Δ" := (SubstEq Γ σ σ' Δ).
     
 Lemma exp_eq_subst_eq_refl : 
   (forall Γ t T, Γ ⊢ t : T -> Γ ⊢ t ≈ t : T) /\
