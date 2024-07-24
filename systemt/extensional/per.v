@@ -98,7 +98,7 @@ Definition Realize (T : Typ) (A : SemTyp) : Prop :=
   (forall a a', A a a' -> dnf_reif T a ≈ dnf_reif T a' ∈ ⊤) /\
   (forall e e', e ≈ e' ∈ ⊥ -> A (d_refl T e) (d_refl T e')).
 
-Notation " T ⊩ A " := (Realize T A)
+Notation "T ⊩ A" := (Realize T A)
   (at level 55, no associativity).
 
 Inductive SemTypNat : D -> D -> Prop :=
@@ -121,3 +121,14 @@ Proof.
       destruct H as [u]. intuition. eauto.
   - constructor; auto.
 Qed.
+
+Definition SemAbs (S T : SemTyp) : SemTyp :=
+  fun f f' => forall a a', S a a' -> exists b b', f ∙ a ↘ b /\ f' ∙ a' ↘ b' /\ T b b'.
+
+Notation "S ⇒ T" := (SemAbs S T)  (at level 55, right associativity).
+
+Lemma sem_abs_intros : forall S T A B,
+  S ⊩ A -> T ⊩ B -> (S → T) ⊩ (A ⇒ B).
+Proof.
+  intros.
+Admitted.
