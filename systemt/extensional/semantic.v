@@ -43,7 +43,7 @@ Inductive AppRel : D -> D -> D -> Prop :=
     ⟦ t ⟧ (ρ ↦ a) ↘ b ->
     (d_abs t ρ) ∙ a ↘ b
   | app_app : forall e d S T,
-    (d_refl (S → T) e) ∙ d ↘ (d_refl T (dne_app e (dnf_reif T d)))
+    (d_refl (S → T) e) ∙ d ↘ (d_refl T (dne_app e (dnf_reif S d)))
 with EvalRel : Exp -> Env -> D -> Prop :=
   | eval_var : forall ρ n,
     ⟦ exp_var n ⟧ ρ ↘ (ρ n)

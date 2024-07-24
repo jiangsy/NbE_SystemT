@@ -18,7 +18,7 @@ Notation " e ≈ e' ∈ ⊥" := (SemTypBot e e')
 Notation " d ≈ d' ∈ ⊤" := (SemTypTop d d')
   (at level 55, no associativity).
 
-Hint Constructors RNfRel RNeRel : core.
+Hint Constructors AppRel RNfRel RNeRel : core.
 
 Lemma sem_typ_bot_var : forall i,
   (dne_l i) ≈ (dne_l i) ∈ ⊥.
@@ -130,5 +130,9 @@ Notation "S ⇒ T" := (SemAbs S T)  (at level 55, right associativity).
 Lemma sem_abs_intros : forall S T A B,
   S ⊩ A -> T ⊩ B -> (S → T) ⊩ (A ⇒ B).
 Proof.
-  intros.
+  intros. unfold Realize in *. split.
+  - intros. unfold SemAbs in H1. admit.
+  - intros. unfold SemAbs. intros.
+    exists (d_refl T (dne_app e (dnf_reif S a))), (d_refl T (dne_app e' (dnf_reif S a'))); intuition; eauto.
+    + eapply H5. eapply sem_typ_bot_app; eauto.
 Admitted.
