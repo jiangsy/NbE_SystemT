@@ -113,7 +113,7 @@ Lemma app_eval_rec_subst_det :
 Proof.
   apply app_eval_rec_subst_mutind; intros; 
     try solve [dependent destruction H; eauto; try apply f_equal; try apply f_equal2; eauto];
-    try solve [dependent destruction H0; eauto;  try apply f_equal; try apply f_equal2; eauto].
+    try solve [dependent destruction H0; eauto; try apply f_equal; try apply f_equal2; eauto].
   - dependent destruction H2. 
     apply H in H2_.
     apply H0 in H2_0. subst.
@@ -241,3 +241,4 @@ Corollary rnf_det : forall n d v1 v2,
 Proof.
   specialize rne_rnf_det. intuition. eauto.
 Qed.
+

@@ -1,3 +1,5 @@
+Require Import Coq.Program.Equality.
+
 Require Import nbe.systemt.extensional.syntax.
 Require Import nbe.systemt.extensional.semantic.
 
@@ -9,13 +11,31 @@ Definition SemTypTop (d d' : Dnf) : Prop :=
 Definition SemTypBot (e e' : Dne) : Prop :=
   forall n, exists u, Rⁿᵉ ⦇ n ⦈ e ↘ u /\ Rⁿᵉ ⦇ n ⦈ e' ↘ u.
 
-Notation " e ≈ e' ∈ ⊥" := (SemTypBot e e')
+Notation "e ≈ e' ∈ ⊥" := (SemTypBot e e')
   (at level 55, no associativity).
 
-Notation " d ≈ d' ∈ ⊤" := (SemTypTop d d')
+Notation "d ≈ d' ∈ ⊤" := (SemTypTop d d')
   (at level 55, no associativity).
 
 Hint Constructors AppRel RNfRel RNeRel : core.
+
+Lemma sem_bot_symm : forall e e',
+  e ≈ e' ∈ ⊥ -> e' ≈ e ∈ ⊥.
+Proof.
+  intros. unfold SemTypBot in *. intros.
+  specialize (H n). destruct H as [u [Hrnee Hrene']].
+  eauto.
+Qed.
+
+Lemma sem_bot_trans : forall e1 e2 e3,
+  e1 ≈ e2 ∈ ⊥ -> e2 ≈ e3 ∈ ⊥ -> e1 ≈ e3 ∈ ⊥.
+Proof.
+  intros. unfold SemTypBot in *. intros.
+  specialize (H n). specialize (H0 n).
+  destruct H as [u1 [Hrnee1 Hrnee2]].
+  destruct H0 as [u2 [Hrnee2' Hrnee3]].
+  eapply rne_det in Hrnee2; eauto. subst. eauto.
+Qed.
 
 Lemma sem_typ_bot_var : forall i,
   (dne_l i) ≈ (dne_l i) ∈ ⊥.
@@ -109,6 +129,9 @@ Inductive SemTypNat : D -> D -> Prop :=
 
 Notation "'𝒩'" := SemTypNat.
 
+Notation "a ≈ a' ∈ '𝒩'" := (SemTypNat a a')
+  (at level 55, no associativity).
+
 Lemma nat_realize_sem_nat : ℕ ⊩ 𝒩.
 Proof.
   unfold Realize. split; intros.
@@ -137,4 +160,66 @@ Proof.
   - intros. unfold SemAbs. intros.
     exists (d_refl T (dne_app e (dnf_reif S a))), (d_refl T (dne_app e' (dnf_reif S a'))); intuition; eauto.
     + eauto using sem_typ_bot_app.
+Qed.
+
+Lemma sem_nat_symm : forall a a',
+  a ≈ a' ∈ 𝒩 -> a' ≈ a ∈ 𝒩.
+Proof.
+  intros.
+  induction H; eauto using SemTypNat, sem_bot_symm.
+Qed.
+
+Lemma sem_nat_trans : forall a1 a2 a3,
+  a1 ≈ a2 ∈ 𝒩 -> a2 ≈ a3 ∈ 𝒩 -> a1 ≈ a3 ∈ 𝒩.
+Proof.
+  intros. generalize dependent a3. induction H; intros; eauto.
+  - dependent destruction H0.
+    eauto using SemTypNat.
+  - dependent destruction H0.
+    eauto using SemTypNat, sem_bot_trans.
+Qed.
+
+Fixpoint interp_typ (T : Typ) : SemTyp :=
+  match T with 
+  | ℕ => 𝒩
+  | S' → T' => (interp_typ S') ⇒ (interp_typ T')
+  end.
+
+Notation "⟦ T ⟧T" := (interp_typ T).
+
+Notation "a ≈ a' ∈ ⟦ T ⟧T" := ((interp_typ T) a a') 
+  (at level 55, a' at next level, no associativity).
+
+Lemma sem_typ_symm: forall a a' T,
+  a ≈ a' ∈ ⟦ T ⟧T ->
+  a' ≈ a ∈ ⟦ T ⟧T.
+Proof.
+  intros. generalize dependent a. generalize dependent a'. induction T; intros.
+  - simpl in *. apply sem_nat_symm. eauto.
+  - simpl in *. unfold SemAbs in *. intros.
+    apply IHT1 in H0.
+    apply H in H0.
+    destruct H0 as [b [b']].
+    exists b', b. intuition.
+Qed.
+
+Lemma sem_typ_trans : forall a1 a2 a3 T,
+  a1 ≈ a2 ∈ ⟦ T ⟧T ->
+  a2 ≈ a3 ∈ ⟦ T ⟧T ->
+  a1 ≈ a3 ∈ ⟦ T ⟧T.
+Proof.
+  intros. generalize dependent a1. generalize dependent a2. generalize dependent a3.
+  induction T; intros.
+  - simpl in *. eapply sem_nat_trans; eauto.
+  - simpl in *. unfold SemAbs in *. intros.
+    apply sem_typ_symm in H1 as H1'.
+    eapply IHT1 in H1'; eauto.
+    apply H in H1 as IH1.
+    apply H0 in H1' as IH2.
+    destruct IH1 as [b1 [b2]].
+    destruct IH2 as [b2' [b3]].
+    intuition.
+    eapply app_det in H2; eauto. subst.
+    exists b1, b3; intuition.
+    eapply IHT2; eauto.
 Qed.
