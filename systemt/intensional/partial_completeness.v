@@ -266,7 +266,7 @@ Proof.
   exists ρ. intuition.
 Qed.
 
-Lemma sem_subst_comp : forall Γ1 Γ2 Γ3 σ τ,
+Lemma sem_subst_typing_comp : forall Γ1 Γ2 Γ3 σ τ,
   Γ1 ⊨s τ : Γ2 ->
   Γ2 ⊨s σ : Γ3 ->
   Γ1 ⊨s σ ∘ τ : Γ3.
@@ -277,7 +277,7 @@ Proof.
   eauto.
 Qed.
 
-Lemma sem_subst_ext : forall Γ Δ σ s S,
+Lemma sem_subst_typing_ext : forall Γ Δ σ s S,
   Γ ⊨s σ : Δ ->
   Γ ⊨ s : S ->
   Γ ⊨s es_ext σ s : (S :: Δ).
@@ -412,3 +412,62 @@ Proof.
   apply H in H0. destruct H0 as [a [Heval Htyp]].
   exists a, a; intuition. eauto.
 Qed. 
+
+Scheme typing_ind := Induction for Typing Sort Prop
+  with subst_typing_ind := Induction for SubstTyping Sort Prop.
+
+Combined Scheme typing_subst_typing_mutind from typing_ind, subst_typing_ind.
+
+Theorem partial_completness : 
+  ( forall Γ t T, Γ ⊢ t : T -> Γ ⊨ t : T) /\
+  ( forall Γ σ Δ, Γ ⊢s σ : Δ -> Γ ⊨s σ : Δ ).
+Proof.
+  apply typing_subst_typing_mutind; auto; intros; eauto.
+  - eapply sem_typing_var; auto.
+  - eapply sem_typing_abs; eauto.
+  - eapply sem_typing_app; eauto.
+  - eapply sem_typing_zero.
+  - eapply sem_typing_suc; eauto. 
+  - eapply sem_typing_rec; eauto. 
+  - eapply sem_typing_subst; eauto. 
+  - eapply sem_subst_typing_shift.
+  - eapply sem_subst_typing_id. 
+  - eapply sem_subst_typing_comp; eauto. 
+  - eapply sem_subst_typing_ext; eauto.
+Qed.
+
+Theorem syn_typing_sem_typing : forall Γ t T, 
+  Γ ⊢ t : T -> Γ ⊨ t : T.
+Proof.
+  specialize partial_completness. intros. intuition.
+Qed.
+
+Definition init_env (n : nat) : Env :=
+  fun i => d_ne (dn_l (n - i - 1)).
+
+Definition nbe (Γ : Ctx) (t : Exp) (w : Nf) : Prop := 
+  exists d, ⟦ t ⟧ (init_env (length Γ)) ↘ d /\ Rⁿᶠ ⦇ (length Γ) ⦈ d ↘ w.
+
+Lemma init_env_is_env : forall Γ,
+  ⟦ Γ ⟧Γ (init_env (length Γ)).
+Proof.
+  intros. induction Γ; simpl; eauto.
+  - unfold init_env in *; split.
+    + simpl. apply bot_subset_T; eauto.
+      econstructor; eauto.
+    + unfold drop. simpl. auto.
+Qed.
+
+Corollary nbe_partial_completeness : forall Γ t T,
+  Γ ⊢ t : T ->
+  exists w, nbe Γ t w.
+Proof.
+  intros.
+  apply syn_typing_sem_typing in H. unfold SemTyping in H.
+  specialize (init_env_is_env Γ). intros.
+  apply H in H0. destruct H0 as [a [Heval Htyp]].
+  apply T_subset_top in Htyp. unfold SemTypTop in Htyp.
+  specialize (Htyp (length Γ)). destruct Htyp as [w].
+  exists w; unfold nbe.
+  eauto.
+Qed.

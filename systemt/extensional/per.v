@@ -107,7 +107,9 @@ Inductive SemTypNat : D -> D -> Prop :=
       e ≈ e' ∈ ⊥ ->
       SemTypNat (d_refl ℕ e) (d_refl ℕ e').
 
-Lemma nat_realize_sem_nat : ℕ ⊩ SemTypNat.
+Notation "'𝒩'" := SemTypNat.
+
+Lemma nat_realize_sem_nat : ℕ ⊩ 𝒩.
 Proof.
   unfold Realize. split; intros.
   - induction H; unfold SemTypTop; intros; eauto.
