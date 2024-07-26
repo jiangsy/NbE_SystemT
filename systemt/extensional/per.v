@@ -303,6 +303,29 @@ Hint Constructors EvalRel RecRel SubstRel : core.
 
 Hint Constructors SemTypNat : core.
 
+Lemma env_has_d : forall Γ i ρ ρ' T,
+  nth_error Γ i = Some T ->
+  ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
+  exists a a', (ρ i) = a /\ (ρ' i = a') /\ a ≈ a' ∈ ⟦ T ⟧T.
+Proof.
+  intros. induction Γ.
+  - destruct i; inversion H.
+  - unfold SemEqEnv in H0. 
+    apply H0 in H; eauto.
+Qed.
+
+Lemma sem_eq_exp_var : forall Γ i T,
+  nth_error Γ i = Some T ->
+  Γ ⊨ (exp_var i) ≈ (exp_var i) : T.
+Proof.
+  intros. unfold SemEqExp. intros.
+  eapply env_has_d in H0; eauto.
+  destruct H0 as [a [a']].
+  exists a, a'; intuition.
+  - rewrite <- H1; auto.
+  - rewrite <- H0; auto.
+Qed.
+
 Lemma sem_eq_exp_zero : forall Γ,
   Γ ⊨ exp_zero ≈ exp_zero : ℕ.
 Proof.
@@ -310,3 +333,34 @@ Proof.
   exists d_zero, d_zero. intuition.
   simpl; eauto.
 Qed.
+
+Lemma sem_eq_exp_suc : forall Γ t t',
+  Γ ⊨ t ≈ t' : ℕ ->
+  Γ ⊨ (exp_suc t) ≈ (exp_suc t') : ℕ.
+Proof.
+  intros. unfold SemEqExp in *. intros.
+  apply H in H0. destruct H0 as [a [a']].
+  exists (d_suc a), (d_suc a'); simpl; intuition.
+Qed.
+
+Lemma sem_eq_exp_abs : forall Γ t t' S T,
+  (S :: Γ) ⊨ t ≈ t' : T ->
+  Γ ⊨ (exp_abs t) ≈ (exp_abs t') : S → T.
+Proof.
+  intros. unfold SemEqExp in *. intros.
+  exists (d_abs t ρ), (d_abs t' ρ'); intuition.
+  simpl. unfold SemAbs. intros.
+  assert ((ρ ↦ a) ≈ (ρ' ↦ a') ∈ ⟦ S :: Γ ⟧Γ). {
+    unfold SemEqEnv in *. intros. destruct i; simpl in *; auto.
+    - dependent destruction H2. auto.
+  }
+  apply H in H2. destruct H2 as [b [b']].
+  exists b, b'; intuition.
+Qed.
+
+Lemma sem_eq_exp_app : forall Γ r r' s s' S T,
+  Γ ⊨ r ≈ r' : S → T ->
+  Γ ⊨ s ≈ s' : S ->
+  Γ ⊨ (exp_app r s) ≈ (exp_app r' s') : T.
+Proof.
+Admitted.
