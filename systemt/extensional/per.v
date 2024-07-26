@@ -1,4 +1,5 @@
 Require Import Coq.Program.Equality.
+Require Import Coq.Lists.List.
 
 Require Import nbe.systemt.extensional.syntax.
 Require Import nbe.systemt.extensional.semantic.
@@ -149,8 +150,9 @@ Definition SemAbs (S T : SemTyp) : SemTyp :=
 
 Notation "S ⇒ T" := (SemAbs S T)  (at level 55, right associativity).
 
-Lemma sem_abs_intros : forall S T A B,
-  S ⊩ A -> T ⊩ B -> (S → T) ⊩ (A ⇒ B).
+Lemma arr_realize_sem_arr : forall S T A B,
+  S ⊩ A -> T ⊩ B -> 
+  (S → T) ⊩ (A ⇒ B).
 Proof.
   intros. unfold Realize in *. split.
   - intros. apply sem_typ_top_abs. intros. unfold SemAbs in H1.  
@@ -222,4 +224,89 @@ Proof.
     eapply app_det in H2; eauto. subst.
     exists b1, b3; intuition.
     eapply IHT2; eauto.
+Qed.
+
+Lemma sem_typ_refl : forall a a' T,
+  a ≈ a' ∈ ⟦ T ⟧T ->
+  a ≈ a ∈ ⟦ T ⟧T.
+Proof.
+  intros.
+  eapply sem_typ_trans with (a2:=a'); eauto using sem_typ_symm.
+Qed.
+
+Lemma typ_realize_interp_typ : forall T,
+  T ⊩ ⟦ T ⟧T.
+Proof.
+  intros. induction T.
+  - apply nat_realize_sem_nat.
+  - apply arr_realize_sem_arr; eauto.
+Qed.
+
+Definition SemEqEnv (ρ ρ' : Env) (Γ : Ctx) :=
+  forall i T, nth_error Γ i = Some T -> (ρ i) ≈ (ρ' i) ∈ ⟦ T ⟧T.
+
+Notation "ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ" := (SemEqEnv ρ ρ' Γ)
+  (at level 55, ρ' at next level, no associativity).
+
+Definition SemEqExp (Γ : Ctx) (t t' : Exp) (T : Typ) : Prop := 
+  forall ρ ρ', ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> exists a a', ⟦ t ⟧ ρ ↘ a /\ ⟦ t' ⟧ ρ' ↘ a' /\ a ≈ a' ∈ ⟦ T ⟧T.
+
+Notation "Γ ⊨ t ≈ t' : T" := (SemEqExp Γ t t' T) 
+  (at level 55, t at next level, t' at next level, no associativity).
+
+Lemma sem_eq_env_symm : forall Γ ρ ρ',
+  ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
+  ρ' ≈ ρ ∈ ⟦ Γ ⟧Γ.
+Proof.
+  intros. unfold SemEqEnv in *. intros.
+  apply H in H0. 
+  apply sem_typ_symm; eauto.
+Qed.
+
+Lemma sem_eq_env_refl : forall Γ ρ ρ',
+  ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
+  ρ ≈ ρ ∈ ⟦ Γ ⟧Γ.
+Proof.
+  intros. unfold SemEqEnv in *. intros.
+  eapply sem_typ_refl; eauto.
+Qed.
+
+Lemma sem_eq_exp_symm : forall Γ t t' T,
+  Γ ⊨ t ≈ t' : T ->
+  Γ ⊨ t' ≈ t : T.
+Proof.
+  intros. unfold SemEqExp in *. intros.
+  apply sem_eq_env_symm in H0.
+  apply H in H0. destruct H0 as [a [a']].
+  exists a', a. intuition; eauto.
+  apply sem_typ_symm; auto.
+Qed.
+
+Lemma sem_eq_exp_trans : forall Γ t1 t2 t3 T,
+  Γ ⊨ t1 ≈ t2 : T ->
+  Γ ⊨ t2 ≈ t3 : T ->
+  Γ ⊨ t1 ≈ t3 : T.
+Proof.
+  intros. unfold SemEqExp in *. intros.
+  apply H in H1 as IH1.
+  apply sem_eq_env_symm in H1 as H1'.
+  apply sem_eq_env_refl in H1'.
+  apply H0 in H1' as IH2.
+  destruct IH1 as [a1 [a2]].
+  destruct IH2 as [a2' [a3]]. intuition.
+  eapply eval_det in H2; eauto. subst.
+  exists a1, a3; intuition.
+  eapply sem_typ_trans; eauto.
+Qed.
+
+Hint Constructors EvalRel RecRel SubstRel : core.
+
+Hint Constructors SemTypNat : core.
+
+Lemma sem_eq_exp_zero : forall Γ,
+  Γ ⊨ exp_zero ≈ exp_zero : ℕ.
+Proof.
+  intros. unfold SemEqExp. intros.
+  exists d_zero, d_zero. intuition.
+  simpl; eauto.
 Qed.
