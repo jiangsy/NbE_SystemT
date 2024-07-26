@@ -145,21 +145,21 @@ Proof.
   - constructor; auto.
 Qed.
 
-Definition SemAbs (S T : SemTyp) : SemTyp :=
+Definition SemArr (S T : SemTyp) : SemTyp :=
   fun f f' => forall a a', S a a' -> exists b b', f ∙ a ↘ b /\ f' ∙ a' ↘ b' /\ T b b'.
 
-Notation "S ⇒ T" := (SemAbs S T)  (at level 55, right associativity).
+Notation "S ⇒ T" := (SemArr S T)  (at level 55, right associativity).
 
 Lemma arr_realize_sem_arr : forall S T A B,
   S ⊩ A -> T ⊩ B -> 
   (S → T) ⊩ (A ⇒ B).
 Proof.
   intros. unfold Realize in *. split.
-  - intros. apply sem_typ_top_abs. intros. unfold SemAbs in H1.  
+  - intros. apply sem_typ_top_abs. intros. unfold SemArr in H1.  
     intuition.
     apply H4 in H2. apply H1 in H2. 
     destruct H2 as [b [b']]. exists b, b'. intuition.
-  - intros. unfold SemAbs. intros.
+  - intros. unfold SemArr. intros.
     exists (d_refl T (dne_app e (dnf_reif S a))), (d_refl T (dne_app e' (dnf_reif S a'))); intuition; eauto.
     + eauto using sem_typ_bot_app.
 Qed.
@@ -198,7 +198,7 @@ Lemma sem_typ_symm: forall a a' T,
 Proof.
   intros. generalize dependent a. generalize dependent a'. induction T; intros.
   - simpl in *. apply sem_nat_symm. eauto.
-  - simpl in *. unfold SemAbs in *. intros.
+  - simpl in *. unfold SemArr in *. intros.
     apply IHT1 in H0.
     apply H in H0.
     destruct H0 as [b [b']].
@@ -213,7 +213,7 @@ Proof.
   intros. generalize dependent a1. generalize dependent a2. generalize dependent a3.
   induction T; intros.
   - simpl in *. eapply sem_nat_trans; eauto.
-  - simpl in *. unfold SemAbs in *. intros.
+  - simpl in *. unfold SemArr in *. intros.
     apply sem_typ_symm in H1 as H1'.
     eapply IHT1 in H1'; eauto.
     apply H in H1 as IH1.
@@ -349,7 +349,7 @@ Lemma sem_eq_exp_abs : forall Γ t t' S T,
 Proof.
   intros. unfold SemEqExp in *. intros.
   exists (d_abs t ρ), (d_abs t' ρ'); intuition.
-  simpl. unfold SemAbs. intros.
+  simpl. unfold SemArr. intros.
   assert ((ρ ↦ a) ≈ (ρ' ↦ a') ∈ ⟦ S :: Γ ⟧Γ). {
     unfold SemEqEnv in *. intros. destruct i; simpl in *; auto.
     - dependent destruction H2. auto.
@@ -363,4 +363,13 @@ Lemma sem_eq_exp_app : forall Γ r r' s s' S T,
   Γ ⊨ s ≈ s' : S ->
   Γ ⊨ (exp_app r s) ≈ (exp_app r' s') : T.
 Proof.
-Admitted.
+  intros. unfold SemEqExp in *. intros.
+  apply H in H1 as IH1.
+  apply H0 in H1 as IH2.
+  destruct IH1 as [f [f']]. intuition.
+  destruct IH2 as [a [a']]. intuition.
+  simpl in H5. unfold SemArr in H5.
+  apply H5 in H8.
+  destruct H8 as [b [b']]. 
+  exists b, b'; intuition; eauto.
+Qed.
