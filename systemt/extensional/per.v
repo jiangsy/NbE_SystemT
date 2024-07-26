@@ -280,6 +280,17 @@ Proof.
   eapply sem_typ_refl; eauto.
 Qed.
 
+Lemma sem_eq_env_trans : forall Γ ρ1 ρ2 ρ3,
+  ρ1 ≈ ρ2 ∈ ⟦ Γ ⟧Γ ->
+  ρ2 ≈ ρ3 ∈ ⟦ Γ ⟧Γ ->
+  ρ1 ≈ ρ3 ∈ ⟦ Γ ⟧Γ.
+Proof.
+  intros. unfold SemEqEnv in *. intros.
+  apply H in H1 as IH1.
+  apply H0 in H1 as IH2.
+  eauto using sem_typ_trans.
+Qed.
+
 Lemma sem_eq_exp_symm : forall Γ t t' T,
   Γ ⊨ t ≈ t' : T ->
   Γ ⊨ t' ≈ t : T.
@@ -326,6 +337,40 @@ Proof.
   destruct H0 as [τ [τ']].
   exists τ', τ. intuition.
   apply sem_eq_env_symm. auto.
+Qed.
+
+Lemma sem_eq_subst_refl : forall Γ Δ σ σ',
+  Γ ⊨s σ ≈ σ' : Δ ->
+  Γ ⊨s σ ≈ σ : Δ.
+Proof.
+  intros. unfold SemEqSubst in *. intros.
+  apply H in H0 as IH1.
+  apply sem_eq_env_symm in H0.
+  apply sem_eq_env_refl in H0.
+  apply H in H0 as IH2.
+  destruct IH1 as [τ11 [τ22]].
+  destruct IH2 as [τ12 [τ22']].
+  intuition. eapply subst_det in H2; eauto.
+  subst.
+  exists τ11, τ12. intuition.
+  eauto using sem_eq_env_trans, sem_eq_env_symm.
+Qed.
+
+Lemma sem_eq_subst_trans : forall Γ Δ σ1 σ2 σ3, 
+  Γ ⊨s σ1 ≈ σ2 : Δ ->
+  Γ ⊨s σ2 ≈ σ3 : Δ ->
+  Γ ⊨s σ1 ≈ σ3 : Δ.
+Proof.
+  intros. unfold SemEqSubst in *. intros.
+  apply H in H1 as IH1.
+  apply sem_eq_env_symm in H1.
+  apply sem_eq_env_refl in H1.
+  apply H0 in H1 as IH2.
+  destruct IH1 as [τ1 [τ2]].
+  destruct IH2 as [τ2' [τ3]].
+  exists τ1, τ3. intuition; eauto.
+  eapply subst_det in H2; eauto.
+  subst. eapply sem_eq_env_trans; eauto.
 Qed.
 
 Hint Constructors EvalRel RecRel SubstRel : core.
