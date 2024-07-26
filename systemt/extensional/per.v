@@ -21,7 +21,8 @@ Notation "d ≈ d' ∈ ⊤" := (SemTypTop d d')
 Hint Constructors AppRel RNfRel RNeRel : core.
 
 Lemma sem_bot_symm : forall e e',
-  e ≈ e' ∈ ⊥ -> e' ≈ e ∈ ⊥.
+  e ≈ e' ∈ ⊥ -> 
+  e' ≈ e ∈ ⊥.
 Proof.
   intros. unfold SemTypBot in *. intros.
   specialize (H n). destruct H as [u [Hrnee Hrene']].
@@ -29,7 +30,9 @@ Proof.
 Qed.
 
 Lemma sem_bot_trans : forall e1 e2 e3,
-  e1 ≈ e2 ∈ ⊥ -> e2 ≈ e3 ∈ ⊥ -> e1 ≈ e3 ∈ ⊥.
+  e1 ≈ e2 ∈ ⊥ -> 
+  e2 ≈ e3 ∈ ⊥ -> 
+  e1 ≈ e3 ∈ ⊥.
 Proof.
   intros. unfold SemTypBot in *. intros.
   specialize (H n). specialize (H0 n).
@@ -165,14 +168,17 @@ Proof.
 Qed.
 
 Lemma sem_nat_symm : forall a a',
-  a ≈ a' ∈ 𝒩 -> a' ≈ a ∈ 𝒩.
+  a ≈ a' ∈ 𝒩 -> 
+  a' ≈ a ∈ 𝒩.
 Proof.
   intros.
   induction H; eauto using SemTypNat, sem_bot_symm.
 Qed.
 
 Lemma sem_nat_trans : forall a1 a2 a3,
-  a1 ≈ a2 ∈ 𝒩 -> a2 ≈ a3 ∈ 𝒩 -> a1 ≈ a3 ∈ 𝒩.
+  a1 ≈ a2 ∈ 𝒩 -> 
+  a2 ≈ a3 ∈ 𝒩 -> 
+  a1 ≈ a3 ∈ 𝒩.
 Proof.
   intros. generalize dependent a3. induction H; intros; eauto.
   - dependent destruction H0.
@@ -253,6 +259,12 @@ Definition SemEqExp (Γ : Ctx) (t t' : Exp) (T : Typ) : Prop :=
 
 Notation "Γ ⊨ t ≈ t' : T" := (SemEqExp Γ t t' T) 
   (at level 55, t at next level, t' at next level, no associativity).
+
+Definition SemEqSubst (Γ Δ : Ctx) (σ σ' : Subst) : Prop :=
+  forall ρ ρ', ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> exists τ τ', ⟦ σ ⟧s ρ ↘ τ /\ ⟦ σ' ⟧s ρ' ↘ τ' /\ τ ≈ τ' ∈ ⟦ Γ ⟧Γ.
+
+Notation "Γ ⊨s σ ≈ σ' : Δ" := (SemEqSubst Γ Δ σ σ')
+  (at level 55, σ at next level, σ' at next level, no associativity).
 
 Lemma sem_eq_env_symm : forall Γ ρ ρ',
   ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
@@ -372,4 +384,28 @@ Proof.
   apply H5 in H8.
   destruct H8 as [b [b']]. 
   exists b, b'; intuition; eauto.
+Qed.
+
+Lemma sem_eq_exp_subst : forall Γ Δ t t' σ σ' T,
+  Γ ⊨ t ≈ t' : T -> 
+  Γ ⊨s σ ≈ σ' : Δ ->
+  Γ ⊨ (exp_subst t σ) ≈ (exp_subst t' σ') : T.
+Proof.
+  intros. unfold SemEqExp in *. unfold SemEqSubst in *. intros.
+  apply H0 in H1 as IH2.
+  destruct IH2 as [τ [τ']]. intuition.
+  apply H in H5 as IH1.
+  destruct IH1 as [a [a']].
+  exists a, a'. intuition; eauto.
+Qed.
+
+Lemma sem_eq_exp_zero_subst : forall Γ Δ σ,
+  Γ ⊨s σ ≈ σ : Δ ->
+  Γ ⊨ (exp_subst exp_zero σ) ≈ exp_zero : ℕ.
+Proof.
+  intros. unfold SemEqExp. intros.
+  unfold SemEqSubst in *.
+  apply H in H0.
+  destruct H0 as [τ [τ']].
+  exists d_zero, d_zero; simpl; intuition; eauto.
 Qed.
