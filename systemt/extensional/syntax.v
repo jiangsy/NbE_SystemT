@@ -121,8 +121,9 @@ Inductive ExpEq : Ctx -> Exp -> Exp -> Typ -> Prop :=
     Γ ⊢ exp_rec T tz ts (exp_suc tn) ≈ exp_app (exp_app ts tn) (exp_rec T tz ts tn) : T
 | exp_eq_subst_shift : forall Γ i T S,
     nth_error Γ i = Some T ->
-    (S :: Γ) ⊢ exp_subst (exp_var i) es_shift ≈ exp_var (i + 1) : T
+    (S :: Γ) ⊢ exp_subst (exp_var i) es_shift ≈ exp_var (1 + i) : T
 | exp_eq_subst_id : forall Γ t T,
+    Γ ⊢ t : T ->
     Γ ⊢ exp_subst t es_id ≈ t : T
 | exp_eq_subst_ext0 : forall Γ Δ σ s S,
     Γ ⊢s σ : Δ ->
@@ -132,7 +133,7 @@ Inductive ExpEq : Ctx -> Exp -> Exp -> Typ -> Prop :=
     Γ ⊢s σ : Δ ->
     Γ ⊢ s : S ->
     nth_error Δ i = Some T ->
-    Γ ⊢ exp_subst (exp_var (i + 1)) (es_ext σ s) ≈ exp_subst (exp_var i) σ : T
+    Γ ⊢ exp_subst (exp_var (1 + i)) (es_ext σ s) ≈ exp_subst (exp_var i) σ : T
 | exp_eq_prop_app : forall Γ Δ σ r s S T,
     Γ ⊢s σ : Δ ->
     Δ ⊢ r : S → T ->
@@ -172,7 +173,7 @@ Inductive ExpEq : Ctx -> Exp -> Exp -> Typ -> Prop :=
     Γ ⊢ tz ≈ tz' : T ->
     Γ ⊢ ts ≈ ts' : ℕ → T → T ->
     Γ ⊢ tn ≈ tn' : ℕ ->
-    Γ ⊢ exp_rec T tz ts tn ≈ exp_rec T ts' ts' tn' : T 
+    Γ ⊢ exp_rec T tz ts tn ≈ exp_rec T tz' ts' tn' : T 
 | exp_eq_comp_subst : forall Γ Δ σ σ' t t' T,
     Γ ⊢s σ ≈ σ' : Δ ->
     Δ ⊢ t ≈ t' : T ->
@@ -216,7 +217,7 @@ with SubstEq : Ctx -> Subst -> Subst -> Ctx -> Prop :=
     Γ ⊢s τ : Γ' ->
     Γ' ⊢s σ : Δ ->
     Γ' ⊢ s : S ->
-    Γ ⊢s (es_ext σ s) ∘ τ ≈ es_ext (σ ∘ τ) (exp_subst s τ) : Δ
+    Γ ⊢s (es_ext σ s) ∘ τ ≈ es_ext (σ ∘ τ) (exp_subst s τ) : (S :: Δ)
 | subst_eq_compat_shift : forall Γ S,
     (S :: Γ) ⊢s ↑ ≈ ↑ : Γ
 | subst_eq_compat_id : forall Γ,
