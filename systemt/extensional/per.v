@@ -13,10 +13,10 @@ Definition SemTypBot (e e' : Dne) : Prop :=
   forall n, exists u, Rⁿᵉ ⦇ n ⦈ e ↘ u /\ Rⁿᵉ ⦇ n ⦈ e' ↘ u.
 
 Notation "e ≈ e' ∈ ⊥" := (SemTypBot e e')
-  (at level 55, no associativity).
+  (at level 55, e' at next level, no associativity).
 
 Notation "d ≈ d' ∈ ⊤" := (SemTypTop d d')
-  (at level 55, no associativity).
+  (at level 55, d' at next level, no associativity).
 
 Hint Constructors AppRel RNfRel RNeRel : core.
 
@@ -134,7 +134,7 @@ Inductive SemTypNat : D -> D -> Prop :=
 Notation "'𝒩'" := SemTypNat.
 
 Notation "a ≈ a' ∈ '𝒩'" := (SemTypNat a a')
-  (at level 55, no associativity).
+  (at level 55, a' at next level, no associativity).
 
 Lemma nat_realize_sem_nat : ℕ ⊩ 𝒩.
 Proof.
@@ -448,15 +448,6 @@ Proof.
   exists b, b'; intuition; eauto.
 Qed.
 
-Lemma sem_eq_exp_rec : forall Γ tz tz' ts ts' tn tn' T,
-  Γ ⊨ tz ≈ tz' : T ->
-  Γ ⊨ ts ≈ ts' : ℕ → T → T ->
-  Γ ⊨ tn ≈ tn' : ℕ ->
-  Γ ⊨ (exp_rec T tz ts tn) ≈ (exp_rec T tz' ts' tn') : T.
-Proof.
-  intros. unfold SemEqExp in *. intro.
-Admitted.
-
 Lemma sem_eq_exp_shift : forall Γ i T S,
   nth_error Γ i = Some T ->
   (S :: Γ) ⊨ (exp_var i) [ ↑ ] ≈ exp_var (1 + i) : T.
@@ -605,6 +596,43 @@ Proof.
   exists dz, dz'. intuition; eauto.
 Qed.
 
+Lemma rec_rec : forall az az' aₛ aₛ' an an' T,
+  az ≈ az' ∈ ⟦ T ⟧T ->
+  aₛ ≈ aₛ' ∈ ⟦ ℕ → T → T ⟧T ->
+  an ≈ an' ∈ ⟦ ℕ ⟧T ->
+  exists a a', RecRel T az aₛ an a /\ RecRel T az' aₛ' an' a' /\ a ≈ a' ∈ ⟦ T ⟧T.
+Proof.
+  intros. simpl in H1. induction H1; auto.
+  - exists az, az'; intuition; eauto.
+  - destruct IHSemTypNat as [b [b']].
+    simpl in *. unfold SemArr in H0. 
+    apply H0 in H1. destruct H1 as [f [f']].
+    intuition.
+    apply H6 in H7. destruct H7 as [a1 [a1']].
+    exists a1, a1'. intuition; eauto.
+  - exists ( d_refl T (dne_rec T (dnf_reif T az) (dnf_reif (ℕ → T → T) aₛ) e)).
+    exists ( d_refl T (dne_rec T (dnf_reif T az') (dnf_reif (ℕ → T → T) aₛ') e')). 
+    specialize (typ_realize_interp_typ T).
+    specialize (typ_realize_interp_typ (ℕ → T → T)). intros. unfold Realize in *. intuition.
+    eauto using sem_bot_rec.
+Qed.
+
+Lemma sem_eq_exp_rec : forall Γ tz tz' ts ts' tn tn' T,
+  Γ ⊨ tz ≈ tz' : T ->
+  Γ ⊨ ts ≈ ts' : ℕ → T → T ->
+  Γ ⊨ tn ≈ tn' : ℕ ->
+  Γ ⊨ (exp_rec T tz ts tn) ≈ (exp_rec T tz' ts' tn') : T.
+Proof.
+  intros. unfold SemEqExp in *. intro.
+  intros. apply H in H2 as IH1. apply H0 in H2 as IH2. apply H1 in H2 as IH3.
+  destruct IH1 as [az [az']].
+  destruct IH2 as [aₛ [aₛ']].
+  destruct IH3 as [an [an']].
+  intuition.
+  eapply rec_rec in H11; eauto. destruct H11 as [b [b']].
+  exists b, b'. intuition; eauto.
+Qed.
+
 Lemma sem_eq_exp_rec_suc : forall Γ tz ts tn T,
   Γ ⊨ tz : T ->
   Γ ⊨ ts : ℕ → T → T ->
@@ -615,13 +643,16 @@ Proof.
   apply H in H2 as IH1.
   apply H0 in H2 as IH2.
   apply H1 in H2 as IH3.
-  destruct IH1 as [dz [dz']].
-  destruct IH2 as [ds [ds']].
-  destruct IH3 as [dn [dn']]. intuition. simpl in *.
-  unfold SemArr in H11.
-  apply H11 in H12.
-  destruct H12 as [f [f']]. intuition.
-Admitted.
+  destruct IH1 as [az [az']].
+  destruct IH2 as [aₛ [aₛ']].
+  destruct IH3 as [an [an']]. intuition.
+  eapply rec_rec in H11 as IH; eauto.
+  destruct IH as [a1 [a1']]. intuition.
+  simpl in *. unfold SemArr in H11.
+  apply H11 in H12. destruct H12 as [f [f']]. intuition.
+  apply H17 in H15. destruct H15 as [b1 [b1']].
+  exists b1, b1'. intuition; eauto.
+Qed.
 
 Lemma sem_eq_exp_abs_subst : forall Γ Δ σ t S T,
   Γ ⊨s σ : Δ ->
