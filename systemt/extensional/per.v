@@ -419,7 +419,7 @@ Qed.
 
 Lemma sem_eq_exp_abs : forall Γ t t' S T,
   (S :: Γ) ⊨ t ≈ t' : T ->
-  Γ ⊨ (exp_abs t) ≈ (exp_abs t') : S → T.
+  Γ ⊨ (λ t) ≈ (λ t') : S → T.
 Proof.
   intros. unfold SemEqExp in *. intros.
   exists (d_abs t ρ), (d_abs t' ρ'); intuition.
@@ -435,7 +435,7 @@ Qed.
 Lemma sem_eq_exp_app : forall Γ r r' s s' S T,
   Γ ⊨ r ≈ r' : S → T ->
   Γ ⊨ s ≈ s' : S ->
-  Γ ⊨ (exp_app r s) ≈ (exp_app r' s') : T.
+  Γ ⊨ r ▫ s ≈ r' ▫ s' : T.
 Proof.
   intros. unfold SemEqExp in *. intros.
   apply H in H1 as IH1.
@@ -451,7 +451,7 @@ Qed.
 Lemma sem_eq_exp_subst : forall Γ Δ t t' σ σ' T,
   Γ ⊨ t ≈ t' : T -> 
   Γ ⊨s σ ≈ σ' : Δ ->
-  Γ ⊨ (exp_subst t σ) ≈ (exp_subst t' σ') : T.
+  Γ ⊨ t [σ] ≈ t' [σ'] : T.
 Proof.
   intros. unfold SemEqExp in *. unfold SemEqSubst in *. intros.
   apply H0 in H1 as IH2.
@@ -463,7 +463,7 @@ Qed.
 
 Lemma sem_eq_exp_zero_subst : forall Γ Δ σ,
   Γ ⊨s σ : Δ ->
-  Γ ⊨ (exp_subst exp_zero σ) ≈ exp_zero : ℕ.
+  Γ ⊨ exp_zero [σ] ≈ exp_zero : ℕ.
 Proof.
   intros. unfold SemEqExp. intros.
   unfold SemEqSubst in *.
@@ -475,7 +475,7 @@ Qed.
 Lemma sem_eq_exp_suc_subst : forall Γ Δ t σ,
   Γ ⊨ t : ℕ ->
   Γ ⊨s σ : Δ ->
-  Γ ⊨ exp_subst (exp_suc t) σ ≈ exp_suc (exp_subst t σ) : ℕ.
+  Γ ⊨ (exp_suc t) [σ] ≈ exp_suc (t [σ]) : ℕ.
 Proof.
   intros. unfold SemEqExp in *. intros.
   unfold SemEqSubst in *.
@@ -490,7 +490,7 @@ Lemma sem_eq_exp_app_subst : forall Γ Δ r s σ S T,
   Γ ⊨ r : S → T ->
   Γ ⊨ s : S ->
   Γ ⊨s σ : Δ ->
-  Γ ⊨ exp_subst (exp_app r s) σ ≈ exp_app (exp_subst r σ) (exp_subst s σ) : T.
+  Γ ⊨ (r ▫ s) [σ] ≈ (r [σ]) ▫ (s [σ]) : T.
 Proof.
   intros. unfold SemEqExp in *. unfold SemEqSubst in *.
   intros.

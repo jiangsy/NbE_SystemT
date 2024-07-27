@@ -23,10 +23,16 @@ with Exp : Set :=
 
 Notation "'ℕ'" := typ_nat.
 
-Notation "`λ` t" := (exp_abs t)
+Notation "'λ' t" := (exp_abs t)
   (at level 55). 
 
 Notation "↑" := es_shift.
+
+Notation " t [ σ ] " := (exp_subst t σ)
+  (at level 53, left associativity).
+
+Notation "r ▫ s" := (exp_app r s)
+  (at level 53, left associativity).
 
 Notation "σ1 ∘ σ2" := (es_comp σ1 σ2) 
   (at level 49, right associativity): type_scope.
