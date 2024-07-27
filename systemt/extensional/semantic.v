@@ -91,7 +91,7 @@ with SubstRel : Subst -> Env -> Env -> Prop :=
   | psusbt_ext : forall ρ ρ' σ t a,
     ⟦ σ ⟧s ρ ↘ ρ' ->
     ⟦ t ⟧ ρ ↘ a -> (* why not ρ', but ρ *)
-    ⟦ es_ext σ t ⟧s ρ ↘ (ρ ↦ a)
+    ⟦ es_ext σ t ⟧s ρ ↘ (ρ' ↦ a)
 where "f ∙ a ↘ b" := (AppRel f a b) and 
       "⟦ t ⟧ ρ ↘ a" := (EvalRel t ρ a) and 
       "rec( T , dz , ds , dn ) ↘ d" := (RecRel T dz ds dn d) and 
