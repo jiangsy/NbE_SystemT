@@ -448,6 +448,15 @@ Proof.
   exists b, b'; intuition; eauto.
 Qed.
 
+Lemma sem_eq_exp_rec : forall Γ tz tz' ts ts' tn tn' T,
+  Γ ⊨ tz ≈ tz' : T ->
+  Γ ⊨ ts ≈ ts' : ℕ → T → T ->
+  Γ ⊨ tn ≈ tn' : ℕ ->
+  Γ ⊨ (exp_rec T tz ts tn) ≈ (exp_rec T tz' ts' tn') : T.
+Proof.
+  intros. unfold SemEqExp in *. intro.
+Admitted.
+
 Lemma sem_eq_exp_subst : forall Γ Δ t t' σ σ' T,
   Γ ⊨s σ ≈ σ' : Δ ->
   Δ ⊨ t ≈ t' : T -> 
@@ -520,7 +529,7 @@ Qed.
 Lemma sem_eq_exp_abs_beta : forall Γ t s S T,
   (S :: Γ) ⊨ t : T ->
   Γ ⊨ s : S ->
-  Γ ⊨ ((λ t) ▫ s) ≈ t [es_ext (↑ ∘ es_id) s] : T.
+  Γ ⊨ ((λ t) ▫ s) ≈ t [es_ext es_id s] : T.
 Proof.
   intros. unfold SemEqExp in *. intros.
   apply H0 in H1 as IH1.
@@ -544,6 +553,24 @@ Proof.
   exists dz, dz'. intuition; eauto.
 Qed.
 
+Lemma sem_eq_exp_rec_suc : forall Γ tz ts tn T,
+  Γ ⊨ tz : T ->
+  Γ ⊨ ts : ℕ → T → T ->
+  Γ ⊨ tn : ℕ ->
+  Γ ⊨ exp_rec T tz ts (exp_suc tn) ≈ ts ▫ tn ▫ exp_rec T tz ts tn : T.
+Proof.
+  intros. unfold SemEqExp in *. intros.
+  apply H in H2 as IH1.
+  apply H0 in H2 as IH2.
+  apply H1 in H2 as IH3.
+  destruct IH1 as [dz [dz']].
+  destruct IH2 as [ds [ds']].
+  destruct IH3 as [dn [dn']]. intuition. simpl in *.
+  unfold SemArr in H11.
+  apply H11 in H12.
+  destruct H12 as [f [f']]. intuition.
+Admitted.
+
 Lemma sem_eq_exp_abs_subst : forall Γ Δ σ t S T,
   Γ ⊨s σ : Δ ->
   (S :: Δ) ⊨ t : T ->
@@ -560,4 +587,122 @@ Proof.
   }
   apply H0 in H6. destruct H6 as [b [b']].
   exists b, b'; intuition; eauto.
+Qed.
+
+Lemma sem_eq_subst_id_l : forall Γ σ Δ,
+  Γ ⊨s σ : Δ ->
+  Γ ⊨s es_id ∘ σ ≈ σ : Δ.
+Proof.
+  intros. unfold SemEqSubst in *. intros.
+  apply H in H0; eauto. destruct H0 as [τ [τ']].
+  exists τ, τ'. intuition; eauto.
+Qed.
+
+Lemma sem_eq_subst_id_r : forall Γ σ Δ,
+  Γ ⊨s σ : Δ ->
+  Γ ⊨s σ ∘ es_id ≈ σ : Δ.
+Proof.
+  intros. unfold SemEqSubst in *. intros.
+  apply H in H0; eauto. destruct H0 as [τ [τ']].
+  exists τ, τ'. intuition; eauto.
+Qed.
+
+Lemma sem_eq_subst_shift : forall Γ S,
+  (S :: Γ) ⊨s ↑ ≈ ↑ : Γ.
+Proof.
+  intros. unfold SemEqSubst. intros. unfold SemEqEnv in H.
+  exists (fun i => ρ (1 + i)), (fun i => ρ' (1 + i)); simpl; intuition; eauto.
+  unfold SemEqEnv. intros.
+  eapply H; eauto.
+Qed.
+
+Lemma sem_eq_subst_id : forall Γ,
+  Γ ⊨s es_id : Γ.
+Proof.
+  intros. unfold SemEqSubst. intros. 
+  exists ρ, ρ'. intuition; eauto.
+Qed.
+
+Lemma sem_eq_subst_ext : forall Γ Δ σ σ' s s' S,
+  Γ ⊨s σ ≈ σ' : Δ ->
+  Γ ⊨ s ≈ s' : S ->
+  Γ ⊨s (es_ext σ s) ≈ (es_ext σ' s') : (S :: Δ).
+Proof.
+  intros. unfold SemEqSubst in *. unfold SemEqExp in *.
+  intros.
+  apply H in H1 as IH1.
+  apply H0 in H1 as IH2.
+  destruct IH1 as [τ [τ']].
+  destruct IH2 as [a [a']].
+  exists (τ ↦ a), (τ' ↦ a'). intuition; simpl; eauto.
+  unfold SemEqEnv in *. intros. destruct i; simpl in H6; eauto.
+  dependent destruction H6; auto.
+Qed.
+
+Lemma sem_eq_subst_comp : forall Γ1 Γ2 Γ3 σ σ' τ τ',
+  Γ1 ⊨s σ ≈ σ' : Γ2 ->
+  Γ2 ⊨s τ ≈ τ' : Γ3 ->
+  Γ1 ⊨s (τ ∘ σ) ≈ (τ' ∘ σ') : Γ3.
+Proof.
+  intros. unfold SemEqSubst in *. intros.
+  apply H in H1 as IH1. destruct IH1 as [ρ1 [ρ1']].
+  intuition.
+  apply H0 in H5 as IH2. destruct IH2 as [ρ2 [ρ2']].
+  exists ρ2, ρ2'. intuition; eauto.
+Qed.
+
+Lemma sem_eq_subst_eta : forall Γ S,
+  (S :: Γ) ⊨s es_id ≈ es_ext es_shift (exp_var 0) : (S :: Γ).
+Proof.
+  intros. unfold SemEqSubst. intros.
+  unfold SemEqEnv in H. exists ρ, (drop ρ' ↦ ρ' 0). intuition; eauto.
+  unfold SemEqEnv in *. intros. destruct i; simpl in *; auto.
+Qed.
+
+Lemma sem_eq_subst_prop : forall Γ1 Γ2 Γ3 σ τ s S,
+  Γ1 ⊨s τ : Γ2 ->
+  Γ2 ⊨s σ : Γ3 ->
+  Γ2 ⊨ s : S ->
+  Γ1 ⊨s (es_ext σ s) ∘ τ ≈ es_ext (σ ∘ τ) (s [τ]) : (S :: Γ3).
+Proof.
+  intros. unfold SemEqSubst in *. intros.
+  unfold SemEqExp in *.
+  apply H in H2 as IH1. destruct IH1 as [ρ1 [ρ1']].
+  intuition.
+  apply H0 in H6 as IH2. destruct IH2 as [ρ2 [ρ2']].
+  apply H1 in H6 as IH3. destruct IH3 as [a [a']].
+  intuition.
+  exists (ρ2 ↦ a), (ρ2' ↦ a'). intuition; eauto.
+  unfold SemEqEnv in *. intros. destruct i; simpl in *; eauto.
+  dependent destruction H10; eauto.
+Qed.
+
+Lemma sem_eq_subst_ext_shift : forall Γ Δ σ s S,
+  Γ ⊨s σ : Δ ->
+  Γ ⊨ s : S ->
+  Γ ⊨s ↑ ∘ (es_ext σ s) ≈ σ : Δ.
+Proof.
+  intros. unfold SemEqSubst in *. intros.
+  unfold SemEqExp in *. 
+  apply H in H1 as IH1.
+  apply H0 in H1 as IH2.
+  destruct IH1 as [ρ1 [ρ1']].
+  destruct IH2 as [a [a']].
+  exists ρ1, ρ1'. intuition; eauto.
+Qed.
+
+Lemma sem_eq_subst_assoc : forall Γ1 Γ2 Γ3 Γ4 σ1 σ2 σ3,
+  Γ1 ⊨s σ1 : Γ2 ->
+  Γ2 ⊨s σ2 : Γ3 ->
+  Γ3 ⊨s σ3 : Γ4 ->
+  Γ1 ⊨s (σ3 ∘ σ2) ∘ σ1 ≈ σ3 ∘ (σ2 ∘ σ1) : Γ4.
+Proof.
+  intros. unfold SemEqSubst in *. intros.
+  apply H in H2 as IH1. destruct IH1 as [ρ1 [ρ1']].
+  intuition.
+  apply H0 in H6 as IH2. destruct IH2 as [ρ2 [ρ2']].
+  intuition.
+  apply H1 in H9 as IH3. destruct IH3 as [ρ3 [ρ3']].
+  intuition.
+  exists ρ3, ρ3'. intuition; eauto.
 Qed.
