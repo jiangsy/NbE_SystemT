@@ -457,6 +457,58 @@ Proof.
   intros. unfold SemEqExp in *. intro.
 Admitted.
 
+Lemma sem_eq_exp_shift : forall Γ i T S,
+  nth_error Γ i = Some T ->
+  (S :: Γ) ⊨ (exp_var i) [ ↑ ] ≈ exp_var (1 + i) : T.
+Proof.
+  intros. unfold SemEqExp in *.
+  intros. unfold SemEqEnv in H0.
+  exists (ρ (1 + i)), (ρ' (1 + i)). intuition; eauto.
+  econstructor; eauto.
+  replace (ρ (1 + i)) with ((drop ρ) i) by auto.
+  eauto.
+Qed.
+
+Lemma sem_eq_exp_subst_id : forall Γ t T,
+  Γ ⊨ t : T ->
+  Γ ⊨ t [ es_id ] ≈ t : T.
+Proof.
+  intros. unfold SemEqExp in *.
+  intros. apply H in H0.
+  destruct H0 as [a [a']].
+  exists a, a'. intuition; eauto.
+Qed.
+
+Lemma sem_eq_exp_subst_ext : forall Γ Δ σ s S,
+  Γ ⊨s σ : Δ ->
+  Γ ⊨ s : S ->
+  Γ ⊨ (exp_var 0) [ es_ext σ s ] ≈ s : S.
+Proof.
+  intros. unfold SemEqExp in *. 
+  unfold SemEqSubst in *.
+  intros. apply H0 in H1 as IH1. destruct IH1 as [a [a']].
+  apply H in H1 as IH2. destruct IH2 as [ρ1 [ρ1']].
+  exists a, a'. intuition; eauto.
+Qed.
+
+Lemma sem_eq_exp_subst_shift : forall Γ Δ i σ s S T,
+  Γ ⊨s σ : Δ ->
+  Γ ⊨ s : S ->
+  nth_error Δ i = Some T ->
+  Γ ⊨ (exp_var (1 + i)) [ es_ext σ s ] ≈ (exp_var i) [ σ ] : T.
+Proof.
+  intros. unfold SemEqSubst in *. unfold SemEqExp in *. intros.
+  apply H in H2 as IH1. destruct IH1 as [ρ1 [ρ1']].
+  intuition.
+  eapply env_has_d in H6 as IH2; eauto.
+  destruct IH2 as [a [a']].
+  apply H0 in H2 as IH2. destruct IH2 as [b [b']].
+  exists a, a'. intuition.
+  - econstructor; eauto.
+    replace a with ((ρ1 ↦ b) (1 + i)). { econstructor. }
+  - rewrite <- H7. eauto.
+Qed.
+
 Lemma sem_eq_exp_subst : forall Γ Δ t t' σ σ' T,
   Γ ⊨s σ ≈ σ' : Δ ->
   Δ ⊨ t ≈ t' : T -> 
