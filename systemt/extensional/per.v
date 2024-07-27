@@ -789,3 +789,79 @@ Proof.
   intuition.
   exists ρ3, ρ3'. intuition; eauto.
 Qed.
+
+Definition Nbe (n : nat) (ρ : Env) (t : Exp) (T: Typ) (w : Nf) :=
+  exists a, ⟦ t ⟧ ρ ↘ a /\ Rⁿᶠ ⦇ n ⦈ (dnf_reif T a) ↘ w.
+
+Definition Completenss (n : nat) (ρ ρ' : Env) (s t : Exp) (T : Typ) :=
+  exists w, Nbe n ρ s T w /\ Nbe n ρ' t T w.
+
+Lemma sem_eq_exp_completeness : forall Γ s t T ρ ρ' n,
+  Γ ⊨ s ≈ t : T ->
+  ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
+  Completenss n ρ ρ' s t T.
+Proof.
+  intros. unfold SemEqExp in *. apply H in H0.
+  unfold Completenss. destruct H0 as [a [a']].
+  specialize (typ_realize_interp_typ T). intros. unfold Realize in H1.
+  intuition.
+  apply H0 in H5. unfold SemTypTop in H5.
+  specialize (H5 n).
+  destruct H5 as [w].
+  exists w. split; unfold Nbe. 
+  - exists a. intuition; eauto.
+  - exists a'. intuition; eauto.
+Qed.
+
+Scheme typing_ind := Induction for Typing Sort Prop
+  with subst_typing_ind := Induction for SubstTyping Sort Prop.
+
+Combined Scheme typing_subst_typing_mutind from typing_ind, subst_typing_ind.
+
+Lemma typing_subst_typing_sem_eq_exp_sem_eq_subst : 
+  (forall Γ t T, Γ ⊢ t : T -> Γ ⊨ t : T) /\
+  (forall Γ σ Δ, Γ ⊢s σ : Δ -> Γ ⊨s σ : Δ).
+Proof.
+  apply typing_subst_typing_mutind; intros; eauto.
+  - apply sem_eq_exp_var; eauto.
+  - apply sem_eq_exp_abs; eauto.
+  - eapply sem_eq_exp_app; eauto.
+  - apply sem_eq_exp_zero; auto.
+  - apply sem_eq_exp_suc; auto.
+  - apply sem_eq_exp_rec; auto.
+  - eapply sem_eq_exp_subst; eauto.
+  - apply sem_eq_subst_shift; auto.
+  - apply sem_eq_subst_id; auto.
+  - eapply sem_eq_subst_comp; eauto.
+  - eapply sem_eq_subst_ext; eauto.
+Qed.
+
+Corollary typing_sem_eq_exp : forall Γ t T, 
+  Γ ⊢ t : T -> Γ ⊨ t : T.
+Proof.
+  specialize typing_subst_typing_sem_eq_exp_sem_eq_subst. intros; intuition.
+Qed.
+
+Corollary subst_typing_sem_eq_subst : forall Γ σ Δ,
+  Γ ⊢s σ : Δ -> Γ ⊨s σ : Δ.
+Proof.
+  specialize typing_subst_typing_sem_eq_exp_sem_eq_subst. intros; intuition.
+Qed.
+
+Scheme exp_eq_ind := Induction for ExpEq Sort Prop
+  with subst_eq_ind := Induction for SubstEq Sort Prop.
+
+Combined Scheme exp_eq_subst_eq_mutind from exp_eq_ind, subst_eq_ind.
+
+Lemma sem_eq_exp_sem_eq_subst_sound : 
+  (forall Γ s t T, Γ ⊢ s ≈ t : T -> Γ ⊨ s ≈ t : T) /\
+  (forall Γ σ τ Δ, Γ ⊢s σ ≈ τ : Δ -> Γ ⊨s σ ≈ τ : Δ).
+Proof with eauto using typing_sem_eq_exp.
+  apply exp_eq_subst_eq_mutind; intros.
+  - eapply sem_eq_exp_abs_beta...
+  - eapply sem_eq_exp_rec_zero...
+  - eapply sem_eq_exp_rec_suc...
+  - admit.
+  - admit.
+Admitted.
+
