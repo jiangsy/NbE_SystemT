@@ -998,7 +998,7 @@ Proof.
   exists w, a. intuition.
 Qed.
 
-Theorem completeness : forall Γ t t' T,
+Theorem nbe_eq_completeness : forall Γ t t' T,
   Γ ⊢ t ≈ t' : T ->
   Completenss (length Γ) (init_env Γ) t t' T.
 Proof.

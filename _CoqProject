@@ -6,3 +6,4 @@
 ./systemt/extensional/syntax.v
 ./systemt/extensional/semantic.v
 ./systemt/extensional/per.v
+./systemt/extensional/soundness.v

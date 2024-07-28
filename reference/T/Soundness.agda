@@ -31,7 +31,7 @@ Pred = Exp → D → Set
 DPred : Set₁
 DPred = Ctx → Pred
 
-record TopPred Δ σ t a T : Set where -- p.p. 25
+record TopPred Δ σ t a T : Set where -- p.p. 37
   field
     nf  : Nf
     ↘nf : Rf L.length Δ - ↓ T a ↘ nf
