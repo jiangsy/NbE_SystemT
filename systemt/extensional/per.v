@@ -248,6 +248,22 @@ Proof.
   - apply arr_realize_sem_arr; eauto.
 Qed.
 
+Lemma bot_subset_T : forall e e' T,
+  e ≈ e' ∈ ⊥ ->
+  d_refl T e ≈ d_refl T e' ∈ ⟦ T ⟧T.
+Proof.
+  intros. pose proof (typ_realize_interp_typ T).
+  unfold Realize in H0. intuition.
+Qed.
+
+Lemma T_subset_top : forall a a' T,
+  a ≈ a' ∈ ⟦ T ⟧T ->
+  (dnf_reif T a) ≈ (dnf_reif T a') ∈ ⊤.
+Proof.
+  intros. pose proof (typ_realize_interp_typ T).
+  unfold Realize in H0. intuition.
+Qed.
+
 Definition SemEqEnv (ρ ρ' : Env) (Γ : Ctx) :=
   forall i T, nth_error Γ i = Some T -> (ρ i) ≈ (ρ' i) ∈ ⟦ T ⟧T.
 
@@ -626,9 +642,8 @@ Proof.
     exists a1, a1'. intuition; eauto.
   - exists ( d_refl T (dne_rec T (dnf_reif T az) (dnf_reif (ℕ → T → T) aₛ) e)).
     exists ( d_refl T (dne_rec T (dnf_reif T az') (dnf_reif (ℕ → T → T) aₛ') e')). 
-    specialize (typ_realize_interp_typ T).
-    specialize (typ_realize_interp_typ (ℕ → T → T)). intros. unfold Realize in *. intuition.
-    eauto using sem_bot_rec.
+    intuition.
+    eauto using sem_bot_rec, bot_subset_T, T_subset_top.
 Qed.
 
 Lemma sem_eq_exp_rec : forall Γ tz tz' ts ts' tn tn' T,
@@ -828,21 +843,23 @@ Qed.
 Definition Nbe (n : nat) (ρ : Env) (t : Exp) (T: Typ) (w : Nf) :=
   exists a, ⟦ t ⟧ ρ ↘ a /\ Rⁿᶠ ⦇ n ⦈ (dnf_reif T a) ↘ w.
 
-Definition Completenss (n : nat) (ρ ρ' : Env) (s t : Exp) (T : Typ) :=
+Definition Completenss' (n : nat) (ρ ρ' : Env) (s t : Exp) (T : Typ) :=
   exists w, Nbe n ρ s T w /\ Nbe n ρ' t T w.
+
+Definition Completenss (n : nat) (ρ : Env) (s t : Exp) (T : Typ) :=
+  exists w, Nbe n ρ s T w /\ Nbe n ρ t T w.
 
 Lemma sem_eq_exp_completeness : forall Γ s t T ρ ρ' n,
   Γ ⊨ s ≈ t : T ->
   ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
-  Completenss n ρ ρ' s t T.
+  Completenss' n ρ ρ' s t T.
 Proof.
   intros. unfold SemEqExp in *. apply H in H0.
   unfold Completenss. destruct H0 as [a [a']].
-  specialize (typ_realize_interp_typ T). intros. unfold Realize in H1.
-  intuition.
-  apply H0 in H5. unfold SemTypTop in H5.
-  specialize (H5 n).
-  destruct H5 as [w].
+  intuition. apply T_subset_top in H3.
+  unfold SemTypTop in H3.
+  specialize (H3 n).
+  destruct H3 as [w].
   exists w. split; unfold Nbe. 
   - exists a. intuition; eauto.
   - exists a'. intuition; eauto.
@@ -930,4 +947,62 @@ Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst.
   - eapply sem_eq_subst_comp...
   - apply sem_eq_subst_symm...
   - eapply sem_eq_subst_trans...
+Qed.
+
+Corollary syn_eq_exp_sem_eq_exp : forall Γ t t' T,
+  Γ ⊢ t ≈ t' : T ->
+  Γ ⊨ t ≈ t' : T.
+Proof.
+  specialize sem_eq_exp_sem_eq_subst_sound. intuition.
+Qed.
+
+Corollary syn_eq_subst_sem_eq_subst : forall Γ σ σ' Δ,
+  Γ ⊢s σ ≈ σ' : Δ ->
+  Γ ⊨s σ ≈ σ' : Δ.
+Proof.
+  specialize sem_eq_exp_sem_eq_subst_sound. intuition.
+Qed.
+
+Fixpoint init_env (Γ : Ctx) : Env :=
+  match Γ with 
+  | nil => fun i => d_zero 
+  | T :: Γ' => fun i =>
+                 match i with 
+                 | 0 => d_refl T (dne_l (length Γ'))
+                 | S i' => init_env Γ' i'
+                 end
+  end.
+
+Lemma init_env_is_sem_env : forall Γ,
+  init_env Γ ≈ init_env Γ ∈ ⟦ Γ ⟧Γ.
+Proof.
+  intros. induction Γ; simpl; auto.
+  - unfold SemEqEnv. intros. destruct i; inversion H.
+  - unfold SemEqEnv in *. intros. destruct i; simpl in *; auto.
+    dependent destruction H. 
+    apply bot_subset_T. unfold SemTypBot. intros; intuition; eauto.
+Qed.
+
+Theorem nbe_completness : forall Γ t T,
+  Γ ⊢ t : T ->
+  exists w, Nbe (length Γ) (init_env Γ) t T w.
+Proof.
+  intros. apply typing_sem_eq_exp in H.
+  unfold SemEqExp in H. 
+  pose proof (init_env_is_sem_env Γ). apply H in H0.
+  destruct H0 as [a [a']]. intuition.
+  eapply eval_det in H1; eauto. subst.
+  apply T_subset_top in H3. unfold SemTypTop in H3.
+  specialize (H3 (length Γ)). 
+  destruct H3 as [w]. unfold Nbe.
+  exists w, a. intuition.
+Qed.
+
+Theorem completeness : forall Γ t t' T,
+  Γ ⊢ t ≈ t' : T ->
+  Completenss (length Γ) (init_env Γ) t t' T.
+Proof.
+  intros. apply syn_eq_exp_sem_eq_exp in H.
+  pose proof (init_env_is_sem_env Γ).
+  eapply sem_eq_exp_completeness in H; eauto.
 Qed.
