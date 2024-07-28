@@ -10,6 +10,8 @@
 *.vos
 *.vo
 
+.lia.cache
+
 CoqMakefile
 CoqMakefile.conf
 .CoqMakefile.d
