@@ -3,7 +3,7 @@ Require Import Coq.Lists.List.
 
 Require Import nbe.systemt.extensional.syntax.
 Require Import nbe.systemt.extensional.semantic.
-Require Import nbe.systemt.extensional.per.
+Require Import nbe.systemt.extensional.completeness.
 
 Definition TypeStructure := Exp -> D -> Prop.
 
