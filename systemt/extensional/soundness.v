@@ -41,26 +41,33 @@ Coercion nf_to_exp : Nf >-> Exp.
 Coercion ne_to_exp : Ne >-> Exp.
 
 Definition KripkeCandidateSpaceUpper (T : Typ) (Γ : Ctx) (t : Exp) (d : D) : Prop :=
-  Γ ⊢ t : T ->
+  Γ ⊢ t : T /\
   forall Δ, exists w, Rⁿᶠ ⦇ length (Δ ++ Γ) ⦈ (dnf_reif T d) ↘ w /\ (Δ ++ Γ) ⊨ t [subst_from_weaken Δ] ≈ w : T.
 
 Definition KripkeCandidateSpaceLower (T : Typ) (Γ : Ctx) (t : Exp) (e : Dne) : Prop :=
-  Γ ⊢ t : T ->
+  Γ ⊢ t : T /\
   forall Δ, exists u, Rⁿᵉ ⦇ length (Δ ++ Γ) ⦈ e ↘ u /\ (Δ ++ Γ) ⊨ t [subst_from_weaken Δ] ≈ u : T.
 
+Notation " t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈" := (KripkeCandidateSpaceUpper T Γ t d)
+  (at level 55, d at next level, T at next level, no associativity).
+
+Notation " t × e ∈ ⌊ T ⌋ ⦇ Γ ⦈" := (KripkeCandidateSpaceLower T Γ t e)
+  (at level 55, e at next level, T at next level, no associativity).
+
 Lemma nat_lower_subset_upper : forall Γ t e,
-  KripkeCandidateSpaceLower ℕ Γ t e ->
-  KripkeCandidateSpaceUpper ℕ Γ t (d_refl ℕ e).
+  t × e ∈ ⌊ ℕ ⌋ ⦇ Γ ⦈ ->
+  t × d_refl ℕ e ∈ ⌈ ℕ ⌉ ⦇ Γ ⦈.
 Proof.  
   intros. unfold KripkeCandidateSpaceLower in *. unfold KripkeCandidateSpaceUpper in *. intros.
-  eapply H with (Δ := Δ) in H0; eauto.
-  destruct H0 as [u]. intuition.
+  intuition.
+  specialize (H1 Δ).
+  destruct H1 as [u]. intuition.
   exists (nf_ne u). intuition.
 Qed.
 
-Definition KripkeArrSpace (S T : Typ) (Γ : Ctx) (A B : KripkeTypeStructure): Exp -> D -> Prop :=
+Definition KripkeArrSpace (S T : Typ) (Γ : Ctx) (A B : KripkeTypeStructure): TypeStructure :=
   fun t f =>
-    Γ ⊢ t : S → T ->
+    Γ ⊢ t : S → T /\
     forall Δ a s, A (Δ ++ Γ) s a -> exists b, f ∙ a ↘ b /\ B (Δ ++ Γ) (t [subst_from_weaken Δ]) b.
 
 Fixpoint interp_typ (T : Typ) : KripkeTypeStructure :=
@@ -68,3 +75,15 @@ Fixpoint interp_typ (T : Typ) : KripkeTypeStructure :=
   | ℕ => KripkeCandidateSpaceUpper ℕ
   | S' → T' => fun Γ => KripkeArrSpace S' T' Γ (interp_typ S') (interp_typ T')
   end.
+
+Notation "t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈" := ((interp_typ T) Γ t d)
+  (at level 55, d at next level, T at next level, no associativity).
+
+Lemma in_typ_structure_wf : forall Γ t T d,
+  t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> Γ ⊢ t : T.
+Proof.
+  intros. generalize dependent t. generalize dependent d. generalize dependent Γ.
+  induction T; intros; simpl in *.
+  - unfold KripkeCandidateSpaceUpper in H. intuition.
+  - unfold KripkeArrSpace in H. intuition.
+Qed.
