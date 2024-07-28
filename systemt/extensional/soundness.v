@@ -1,5 +1,6 @@
 Require Import Coq.Program.Equality.
 Require Import Coq.Lists.List.
+Require Import Lia.
 
 Require Import nbe.systemt.extensional.syntax.
 Require Import nbe.systemt.extensional.semantic.
@@ -86,4 +87,45 @@ Proof.
   induction T; intros; simpl in *.
   - unfold KripkeCandidateSpaceUpper in H. intuition.
   - unfold KripkeArrSpace in H. intuition.
+Qed.
+
+Lemma ext_length_ge : forall {A: Set} (Γ Δ : list A),
+  length (Δ ++ Γ) >= length Γ.
+Proof.
+  intros. induction Δ; simpl; lia.
+Qed.
+
+Lemma ext_length_gt : forall {A: Set} (Γ Δ : list A) (T : A), 
+  length (Δ ++ T :: Γ) > length Γ.
+Proof.
+  intros. specialize (ext_length_ge (T :: Γ) Δ). intros. simpl in *. lia. 
+Qed.
+
+Lemma var_in_typ_structure : forall Γ T,
+  (exp_var 0) × (dne_l (length Γ)) ∈ ⌊ T ⌋ ⦇ T :: Γ ⦈.
+Proof.
+  intros. unfold KripkeCandidateSpaceLower. intuition.
+  - econstructor. auto.
+  - exists (ne_v ((length (Δ ++ T :: Γ)) - length Γ - 1)). split; eauto.
+    induction Δ.
+    Opaque Nat.sub.
+    + simpl. replace (S (length Γ) - length Γ - 1) with 0 by lia.
+      simpl. apply sem_eq_exp_subst_id.
+      apply sem_eq_exp_var; auto.
+    + simpl. eapply sem_eq_exp_trans with (t2:=exp_var 0 [subst_from_weaken Δ] [↑]).
+      * apply sem_eq_exp_symm. eapply sem_eq_exp_subst_comp with (Γ2:=Δ ++ T :: Γ) (Γ3:= T :: Γ); eauto.
+        apply sem_eq_subst_shift.
+        apply subst_typing_sem_eq_subst. 
+        eapply subst_from_weaken_sound.
+        apply sem_eq_exp_var; eauto.
+      * eapply sem_eq_exp_trans with (t2:=exp_var (length (Δ ++ T :: Γ) - length Γ - 1) [↑]).
+        -- eapply sem_eq_exp_subst; eauto. eapply sem_eq_subst_shift.
+        -- specialize (ext_length_gt Γ Δ T). intros.
+           replace (S (length (Δ ++ T :: Γ)) - length Γ - 1) with (1 + (length (Δ ++ T :: Γ) - length Γ - 1)) by lia.
+           eapply sem_eq_exp_shift; eauto.
+           clear IHΔ. clear H. induction Δ; simpl.
+           ++ replace (S (length Γ) - length Γ - 1) with 0 by lia. auto.
+           ++ specialize (ext_length_gt Γ Δ T). intros.
+              replace (S (length (Δ ++ T :: Γ)) - length Γ - 1) with (1 + (length (Δ ++ T :: Γ) - length Γ - 1)) by lia.
+              simpl. auto.
 Qed.
