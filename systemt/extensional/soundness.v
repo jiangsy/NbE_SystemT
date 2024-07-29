@@ -219,9 +219,23 @@ Proof.
   pose proof (lower_subset_interp_typ_subset_upper T Γ t). intuition.
 Qed.
 
-Corollary interp_typ_subset_upper : forall Γ d t T,
-  t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈  -> t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈.
+Corollary interp_typ_subset_upper : forall Γ a t T,
+  t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈  -> t × a ∈ ⌈ T ⌉ ⦇ Γ ⦈.
 Proof.
   intros.
   pose proof (lower_subset_interp_typ_subset_upper T Γ t). intuition.
 Qed.
+
+Lemma syn_eq_exp_in_interp_typ : forall T Γ t t' a,
+  Γ ⊢ t ≈ t' : T ->
+  t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈ ->
+  t' × a ∈ ⟦ T ⟧ ⦇ Γ ⦈.
+Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken.
+  intro. induction T; intros.
+  - simpl in *. unfold KripkeCandidateSpaceUpper in *. intuition.
+    admit.
+    pose proof (H2 Δ). destruct H0 as [w]. exists w. intuition.
+    apply sem_eq_exp_trans with (t2:=t [subst_from_weaken Δ]); auto.
+    eapply sem_eq_exp_subst... apply sem_eq_exp_symm... eapply syn_eq_exp_sem_eq_exp...
+  - admit.
+Admitted.

@@ -3,6 +3,7 @@ Require Import Coq.Lists.List.
 
 Require Import nbe.systemt.extensional.syntax.
 Require Import nbe.systemt.extensional.semantic.
+Require Import nbe.systemt.extensional.nbe.
 
 Definition SemTyp := D -> D -> Prop.
 
@@ -848,15 +849,6 @@ Proof.
   exists ρ3, ρ3'. intuition; eauto.
 Qed.
 
-Definition Nbe (n : nat) (ρ : Env) (t : Exp) (T: Typ) (w : Nf) :=
-  exists a, ⟦ t ⟧ ρ ↘ a /\ Rⁿᶠ ⦇ n ⦈ (dnf_reif T a) ↘ w.
-
-Definition Completenss' (n : nat) (ρ ρ' : Env) (s t : Exp) (T : Typ) :=
-  exists w, Nbe n ρ s T w /\ Nbe n ρ' t T w.
-
-Definition Completenss (n : nat) (ρ : Env) (s t : Exp) (T : Typ) :=
-  exists w, Nbe n ρ s T w /\ Nbe n ρ t T w.
-
 Lemma sem_eq_exp_completeness : forall Γ s t T ρ ρ' n,
   Γ ⊨ s ≈ t : T ->
   ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ ->
@@ -991,7 +983,7 @@ Proof.
     apply bot_subset_T. unfold SemTypBot. intros; intuition; eauto.
 Qed.
 
-Theorem nbe_completness : forall Γ t T,
+Theorem nbe_totality : forall Γ t T,
   Γ ⊢ t : T ->
   exists w, Nbe (length Γ) (init_env Γ) t T w.
 Proof.
