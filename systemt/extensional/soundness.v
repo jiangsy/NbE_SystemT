@@ -69,7 +69,7 @@ Qed.
 Definition KripkeArrSpace (S T : Typ) (Γ : Ctx) (A B : KripkeTypeStructure): TypeStructure :=
   fun t f =>
     Γ ⊢ t : S → T /\
-    forall Δ a s, A (Δ ++ Γ) s a -> exists b, f ∙ a ↘ b /\ B (Δ ++ Γ) (t [subst_from_weaken Δ]) b.
+    forall Δ a s, A (Δ ++ Γ) s a -> exists b, f ∙ a ↘ b /\ B (Δ ++ Γ) (exp_app (t [subst_from_weaken Δ]) s) b.
 
 Fixpoint interp_typ (T : Typ) : KripkeTypeStructure :=
   match T with 
@@ -129,3 +129,17 @@ Proof.
               replace (S (length (Δ ++ T :: Γ)) - length Γ - 1) with (1 + (length (Δ ++ T :: Γ) - length Γ - 1)) by lia.
               simpl. auto.
 Qed.
+
+Lemma lower_subset_interp_typ_subset_upper : forall T Γ t,
+  (forall e, t × e ∈ ⌊ T ⌋ ⦇ Γ ⦈ -> t × (d_refl T e) ∈ ⟦ T ⟧ ⦇ Γ ⦈) /\
+  (forall d, t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈  -> t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈).
+Proof.
+  intro T. induction T; intros; split; intros.
+  - simpl. apply nat_lower_subset_upper. auto.
+  - auto.
+  - simpl in *.
+    unfold KripkeCandidateSpaceLower in H. intuition.
+    unfold KripkeArrSpace. intuition.
+   admit.
+  - admit.
+Admitted.
