@@ -335,6 +335,14 @@ Proof.
   eapply sem_typ_trans; eauto.
 Qed.
 
+Lemma sem_eq_exp_refl : forall Γ t t' T,
+  Γ ⊨ t ≈ t' : T ->
+  Γ ⊨ t ≈ t : T.
+Proof.
+  intros. eapply sem_eq_exp_trans with (t2:=t'); eauto.
+  apply sem_eq_exp_symm. auto.
+Qed.
+
 Definition SemEqSubst (Γ Δ : Ctx) (σ σ' : Subst) : Prop :=
   forall ρ ρ', ρ ≈ ρ' ∈ ⟦ Γ ⟧Γ -> exists τ τ', ⟦ σ ⟧s ρ ↘ τ /\ ⟦ σ' ⟧s ρ' ↘ τ' /\ τ ≈ τ' ∈ ⟦ Δ ⟧Γ.
 

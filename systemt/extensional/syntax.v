@@ -29,7 +29,7 @@ Notation "'λ' t" := (exp_abs t)
 Notation "↑" := es_shift.
 
 Notation " t [ σ ] " := (exp_subst t σ)
-  (at level 53, left associativity).
+  (at level 52, left associativity).
 
 Notation "r ▫ s" := (exp_app r s)
   (at level 53, left associativity).
