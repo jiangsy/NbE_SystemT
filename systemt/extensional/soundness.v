@@ -52,10 +52,10 @@ Definition KripkeCandidateSpaceLower (T : Typ) (Γ : Ctx) (t : Exp) (e : Dne) : 
   forall Δ, exists u, Rⁿᵉ ⦇ length (Δ ++ Γ) ⦈ e ↘ u /\ (Δ ++ Γ) ⊨ t [subst_from_weaken Δ] ≈ u : T.
 
 Notation " t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈" := (KripkeCandidateSpaceUpper T Γ t d)
-  (at level 55, d at next level, T at next level, no associativity).
+  (at level 48, d at next level, T at next level, no associativity).
 
 Notation " t × e ∈ ⌊ T ⌋ ⦇ Γ ⦈" := (KripkeCandidateSpaceLower T Γ t e)
-  (at level 55, e at next level, T at next level, no associativity).
+  (at level 48, e at next level, T at next level, no associativity).
 
 Lemma nat_lower_subset_upper : forall Γ t e,
   t × e ∈ ⌊ ℕ ⌋ ⦇ Γ ⦈ ->
@@ -80,7 +80,7 @@ Fixpoint interp_typ (T : Typ) : KripkeTypeStructure :=
   end.
 
 Notation "t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈" := ((interp_typ T) Γ t d)
-  (at level 55, d at next level, T at next level, no associativity).
+  (at level 48, d at next level, T at next level, no associativity).
 
 Lemma in_typ_structure_wf : forall Γ t T d,
   t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> Γ ⊢ t : T.
@@ -303,3 +303,21 @@ Proof with eauto 4 using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_fro
       eapply exp_eq_refl.
       eapply in_typ_structure_wf...
 Qed.
+
+Definition FutureContext (Γ Δ : Ctx) (ρ : Env) (σ : Subst): Prop :=
+  Δ ⊢s σ : Γ /\ (forall i T, nth_error Γ i = Some T -> (exp_var i) [ σ ] × (ρ i) ∈ ⟦ T ⟧ ⦇ Δ ⦈).
+
+Notation "σ × ρ ∈ Δ ≤ Γ" := (FutureContext Γ Δ ρ σ)
+  (at level 48, ρ at next level, Δ at next level, no associativity).
+
+Definition ExpLogicalRel (Γ : Ctx) (t : Exp) (T : Typ) :=
+  forall ρ σ Δ, σ × ρ ∈ Δ ≤ Γ -> exists a, ⟦ t ⟧ ρ ↘ a /\ (t [σ]) × a ∈ ⟦ T ⟧ ⦇ Δ ⦈.
+
+Notation "Γ ⫢ t : T" := (ExpLogicalRel Γ t T)
+  (at level 55, no associativity).
+
+Definition SubstLogicalRel (Γ Δ : Ctx) (σ : Subst) : Prop := 
+  forall ρ' σ' Δ', σ' × ρ' ∈ Δ' ≤ Γ -> exists ρ, ⟦ σ ⟧s ρ' ↘ ρ /\ (σ ∘ σ') × ρ ∈ Δ' ≤ Δ.
+
+Notation "Γ ⫢s σ : Δ" := (SubstLogicalRel Γ Δ σ)
+  (at level 55, σ at next level, no associativity).
