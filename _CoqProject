@@ -5,6 +5,8 @@
 ./systemt/intensional/partial_completeness.v
 ./systemt/extensional/syntax.v
 ./systemt/extensional/semantic.v
+./systemt/extensional/list.v
 ./systemt/extensional/nbe.v
 ./systemt/extensional/completeness.v
 ./systemt/extensional/soundness.v
+

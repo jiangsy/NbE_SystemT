@@ -2,6 +2,8 @@ Require Import Coq.Program.Equality.
 Require Import Coq.Lists.List.
 Require Import Lia.
 
+
+Require Import nbe.systemt.extensional.list.
 Require Import nbe.systemt.extensional.syntax.
 Require Import nbe.systemt.extensional.semantic.
 Require Import nbe.systemt.extensional.completeness.
@@ -144,7 +146,7 @@ Proof.
   simpl. rewrite IHΓ1; auto.
 Qed.
 
-Lemma subst_from_weaken_comp : forall Γ Δ1 Δ2,
+Lemma sem_subst_eq_subst_from_weaken_comp : forall Γ Δ1 Δ2,
   (Δ1 ++ Δ2 ++ Γ) ⊨s subst_from_weaken Δ2 ∘ subst_from_weaken Δ1 ≈ subst_from_weaken (Δ1 ++ Δ2) : Γ.
 Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken.
   intros. induction Δ1; simpl.
@@ -185,7 +187,7 @@ Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_
     eapply sem_eq_exp_subst_comp... 
     eapply sem_eq_exp_trans with (t2:=t [subst_from_weaken (Δ0 ++ Δ)]); eauto.
     eapply sem_eq_exp_subst...
-    eapply subst_from_weaken_comp.
+    eapply sem_subst_eq_subst_from_weaken_comp.
     rewrite list_concat_assoc. auto.
   - simpl in *. 
     unfold KripkeArrSpace in H. intuition.
@@ -230,12 +232,47 @@ Lemma syn_eq_exp_in_interp_typ : forall T Γ t t' a,
   Γ ⊢ t ≈ t' : T ->
   t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈ ->
   t' × a ∈ ⟦ T ⟧ ⦇ Γ ⦈.
-Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken.
+Proof with eauto using ExpEq, SubstEq, typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken.
   intro. induction T; intros.
   - simpl in *. unfold KripkeCandidateSpaceUpper in *. intuition.
-    admit.
+    eapply syn_exp_eq_typing_r; eauto.
     pose proof (H2 Δ). destruct H0 as [w]. exists w. intuition.
     apply sem_eq_exp_trans with (t2:=t [subst_from_weaken Δ]); auto.
     eapply sem_eq_exp_subst... apply sem_eq_exp_symm... eapply syn_eq_exp_sem_eq_exp...
-  - admit.
+  - simpl in *. unfold KripkeArrSpace in *. intuition.
+    eapply syn_exp_eq_typing_r; eauto.
+    apply H2 in H0 as IH1. destruct IH1 as [b]. exists b. intuition.
+    eapply IHT2; eauto...
+    eapply in_typ_structure_wf in H5 as IH2. dependent destruction IH2.
+    eapply exp_eq_comp_app with (S:=T1); eauto...
+    eapply exp_eq_comp_subst; eauto. apply subst_eq_refl. apply subst_from_weaken_sound.
+    eapply typing_weaken with (Δ:=Δ) in H1.
+    apply in_typ_structure_wf in H0 as IH3. apply exp_eq_refl; eauto.
+Qed.
+
+Hint Constructors Typing SubstTyping ExpEq SubstEq : core.
+
+Lemma in_interp_typ_weaken : forall Δ T Γ t a,
+  t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> 
+  t [subst_from_weaken Δ] × a ∈ ⟦ T ⟧ ⦇ Δ ++ Γ ⦈.
+Proof with eauto 4 using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken, in_typ_structure_wf.
+  intro Δ. induction Δ; simpl.
+  - intros. eapply syn_eq_exp_in_interp_typ; eauto...
+  - intro. induction T; auto.
+    + simpl in *. unfold KripkeCandidateSpaceUpper in *. intuition...
+      specialize (H1 (Δ0 ++ a :: Δ)). destruct H1 as [w].
+      exists w. Opaque length. simpl_alist in *. intuition...
+      admit.
+    + intros. simpl in *. unfold KripkeArrSpace in *.  intuition...
+      specialize (H1 (Δ0 ++ a :: Δ)). simpl_alist in *. apply H1 in H as IH1.
+      destruct IH1 as [b]. exists b. intuition.
+      eapply syn_eq_exp_in_interp_typ; eauto.
+      eapply exp_eq_comp_app with (S:=T1); eauto.
+      eapply exp_eq_trans with (t2:=t [(subst_from_weaken Δ ∘ ↑) ∘ subst_from_weaken Δ0]).
+      eapply exp_eq_comp_subst with (Δ:=Γ)... 
+      admit. admit. 
+      apply exp_eq_symm...
+      eapply exp_eq_prop_comp with (Γ2:=one a ++ Δ ++ Γ)... simpl...
+      eapply exp_eq_refl.
+      eapply in_typ_structure_wf...
 Admitted.

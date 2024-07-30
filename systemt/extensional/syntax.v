@@ -260,3 +260,45 @@ Corollary subst_eq_refl : forall Γ Δ σ,
 Proof.
   specialize exp_eq_subst_eq_refl; intuition; eauto.
 Qed.
+
+Scheme exp_eq_ind := Induction for ExpEq Sort Prop
+  with subst_eq_ind := Induction for SubstEq Sort Prop.
+
+Combined Scheme exp_eq_subst_eq_mutind from exp_eq_ind, subst_eq_ind.
+
+Lemma syn_exp_eq_subst_eq_typing_subst_typing : 
+  (forall Γ t t' T, Γ ⊢ t ≈ t' : T -> Γ ⊢ t : T /\ Γ ⊢ t' : T ) /\
+  (forall Γ σ σ' Δ, Γ ⊢s σ ≈ σ' : Δ -> Γ ⊢s σ : Δ /\ Γ ⊢s σ' : Δ).
+Proof with eauto using Typing, SubstTyping.
+  apply exp_eq_subst_eq_mutind; intros; intuition...
+  - econstructor.
+    eapply typing_subst with (Δ := S :: Δ)...
+Qed.
+
+Corollary syn_exp_eq_typing_l : forall Γ t t' T,
+  Γ ⊢ t ≈ t' : T -> Γ ⊢ t : T.
+Proof.
+  pose proof syn_exp_eq_subst_eq_typing_subst_typing. intuition.
+  apply H0 in H. intuition.
+Qed.
+
+Corollary syn_exp_eq_typing_r : forall Γ t t' T,
+  Γ ⊢ t ≈ t' : T -> Γ ⊢ t' : T.
+Proof.
+  pose proof syn_exp_eq_subst_eq_typing_subst_typing. intuition.
+  apply H0 in H. intuition.
+Qed.
+
+Corollary syn_subst_eq_subst_typing_l : forall Γ σ σ' Δ, 
+  Γ ⊢s σ ≈ σ' : Δ -> Γ ⊢s σ : Δ.
+Proof.
+  pose proof syn_exp_eq_subst_eq_typing_subst_typing. intuition.
+  apply H1 in H. intuition.
+Qed.
+
+Corollary syn_subst_eq_subst_typing_r : forall Γ σ σ' Δ, 
+  Γ ⊢s σ ≈ σ' : Δ -> Γ ⊢s σ' : Δ.
+Proof.
+  pose proof syn_exp_eq_subst_eq_typing_subst_typing. intuition.
+  apply H1 in H. intuition.
+Qed.
