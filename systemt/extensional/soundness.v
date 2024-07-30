@@ -45,11 +45,11 @@ Coercion ne_to_exp : Ne >-> Exp.
 
 Definition KripkeCandidateSpaceUpper (T : Typ) (Γ : Ctx) (t : Exp) (d : D) : Prop :=
   Γ ⊢ t : T /\
-  forall Δ, exists w, Rⁿᶠ ⦇ length (Δ ++ Γ) ⦈ (dnf_reif T d) ↘ w /\ (Δ ++ Γ) ⊨ t [subst_from_weaken Δ] ≈ w : T.
+    forall Δ, exists w, Rⁿᶠ ⦇ length (Δ ++ Γ) ⦈ (dnf_reif T d) ↘ w /\ (Δ ++ Γ) ⊨ t [subst_from_weaken Δ] ≈ w : T.
 
 Definition KripkeCandidateSpaceLower (T : Typ) (Γ : Ctx) (t : Exp) (e : Dne) : Prop :=
   Γ ⊢ t : T /\
-  forall Δ, exists u, Rⁿᵉ ⦇ length (Δ ++ Γ) ⦈ e ↘ u /\ (Δ ++ Γ) ⊨ t [subst_from_weaken Δ] ≈ u : T.
+    forall Δ, exists u, Rⁿᵉ ⦇ length (Δ ++ Γ) ⦈ e ↘ u /\ (Δ ++ Γ) ⊨ t [subst_from_weaken Δ] ≈ u : T.
 
 Notation " t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈" := (KripkeCandidateSpaceUpper T Γ t d)
   (at level 48, d at next level, T at next level, no associativity).
@@ -83,7 +83,8 @@ Notation "t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈" := ((interp_typ T) Γ t d)
   (at level 48, d at next level, T at next level, no associativity).
 
 Lemma in_typ_structure_wf : forall Γ t T d,
-  t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> Γ ⊢ t : T.
+  t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> 
+  Γ ⊢ t : T.
 Proof.
   intros. generalize dependent t. generalize dependent d. generalize dependent Γ.
   induction T; intros; simpl in *.
@@ -172,7 +173,7 @@ Qed.
 
 Lemma lower_subset_interp_typ_subset_upper : forall T Γ t,
   (forall e, t × e ∈ ⌊ T ⌋ ⦇ Γ ⦈ -> t × (d_refl T e) ∈ ⟦ T ⟧ ⦇ Γ ⦈) /\
-  (forall d, t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈  -> t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈).
+  (forall d, t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈).
 Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken.
   intro T. induction T; intros; split; intros.
   - simpl. apply nat_lower_subset_upper. auto.
@@ -227,14 +228,16 @@ Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_
 Qed.
 
 Corollary lower_subst_interp_typ : forall Γ e t T,
-  t × e ∈ ⌊ T ⌋ ⦇ Γ ⦈ -> t × (d_refl T e) ∈ ⟦ T ⟧ ⦇ Γ ⦈.
+  t × e ∈ ⌊ T ⌋ ⦇ Γ ⦈ -> 
+  t × (d_refl T e) ∈ ⟦ T ⟧ ⦇ Γ ⦈.
 Proof.
   intros.
   pose proof (lower_subset_interp_typ_subset_upper T Γ t). intuition.
 Qed.
 
 Corollary interp_typ_subset_upper : forall Γ a t T,
-  t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈  -> t × a ∈ ⌈ T ⌉ ⦇ Γ ⦈.
+  t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> 
+  t × a ∈ ⌈ T ⌉ ⦇ Γ ⦈.
 Proof.
   intros.
   pose proof (lower_subset_interp_typ_subset_upper T Γ t). intuition.
@@ -314,10 +317,63 @@ Definition ExpLogicalRel (Γ : Ctx) (t : Exp) (T : Typ) :=
   forall ρ σ Δ, σ × ρ ∈ Δ ≤ Γ -> exists a, ⟦ t ⟧ ρ ↘ a /\ (t [σ]) × a ∈ ⟦ T ⟧ ⦇ Δ ⦈.
 
 Notation "Γ ⫢ t : T" := (ExpLogicalRel Γ t T)
-  (at level 55, no associativity).
+  (at level 55, t at next level, no associativity).
 
 Definition SubstLogicalRel (Γ Δ : Ctx) (σ : Subst) : Prop := 
   forall ρ' σ' Δ', σ' × ρ' ∈ Δ' ≤ Γ -> exists ρ, ⟦ σ ⟧s ρ' ↘ ρ /\ (σ ∘ σ') × ρ ∈ Δ' ≤ Δ.
 
 Notation "Γ ⫢s σ : Δ" := (SubstLogicalRel Γ Δ σ)
   (at level 55, σ at next level, no associativity).
+
+Lemma init_env_future_context : forall Γ,
+  es_id × (init_env Γ) ∈ Γ ≤ Γ.
+Proof with eauto using Typing, ExpEq.
+  intros. unfold FutureContext. intuition. generalize dependent i. induction Γ; auto; intros.
+  - destruct i; simpl in *; inversion H.
+  - destruct i.
+    + simpl in *. dependent destruction H. 
+      eapply syn_eq_exp_in_interp_typ with (t:=exp_var 0).
+      apply exp_eq_symm. apply exp_eq_subst_id...
+      eapply lower_subst_interp_typ.
+      eapply var_in_typ_structure.
+    + simpl in H. apply IHΓ in H as IH.
+      apply syn_eq_exp_in_interp_typ with (t:=exp_var (S i)).
+      apply exp_eq_symm. apply exp_eq_subst_id...
+      apply syn_eq_exp_in_interp_typ with (t:=exp_var i [ subst_from_weaken (one a) ])...
+      simpl. eapply exp_eq_trans with (t2:=exp_var i [ ↑ ])...
+      simpl_alist.
+      apply in_interp_typ_weaken. simpl.
+      apply syn_eq_exp_in_interp_typ with (t:=exp_var i [es_id])...
+Qed.
+
+Lemma exp_logical_rel_typing : forall Γ t T,
+  Γ ⫢ t : T -> 
+  Γ ⊢ t : T.
+Proof.
+  intros. unfold ExpLogicalRel in *.
+  pose proof (init_env_future_context Γ). apply H in H0. 
+  destruct H0 as [a]. intuition.
+  apply in_typ_structure_wf in H2.
+  dependent destruction H2. dependent destruction H0. auto.
+Qed.
+
+Lemma subst_logical_rel_subst_typing : forall Γ σ Δ,
+  Γ ⫢s σ : Δ ->
+  Γ ⊢s σ : Δ.
+Proof.
+  intros. unfold SubstLogicalRel in *. 
+  pose proof (init_env_future_context Γ). apply H in H0. 
+  destruct H0 as [ρ]. intuition. 
+  unfold FutureContext in H2. intuition. 
+  dependent destruction H0. dependent destruction H0_. auto.
+Qed.
+
+Hint Constructors EvalRel AppRel RecRel SubstRel : core.
+
+Lemma logical_rel_var : forall Γ i T,
+  nth_error Γ i = Some T ->
+  Γ ⫢ (exp_var i) : T.
+Proof.
+  intros. unfold ExpLogicalRel. intros. exists (ρ i). intuition.
+  unfold FutureContext in H0. intuition.
+Qed.
