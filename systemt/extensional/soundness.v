@@ -45,11 +45,11 @@ Coercion ne_to_exp : Ne >-> Exp.
 
 Definition KripkeCandidateSpaceUpper (T : Typ) (Γ : Ctx) (t : Exp) (d : D) : Prop :=
   Γ ⊢ t : T /\
-    forall Δ, exists w, Rⁿᶠ ⦇ length (Δ ++ Γ) ⦈ (dnf_reif T d) ↘ w /\ (Δ ++ Γ) ⊨ t [subst_from_weaken Δ] ≈ w : T.
+    forall Δ, exists w, Rⁿᶠ ⦇ length (Δ ++ Γ) ⦈ (dnf_reif T d) ↘ w /\ (Δ ++ Γ) ⊢ t [subst_from_weaken Δ] ≈ w : T.
 
 Definition KripkeCandidateSpaceLower (T : Typ) (Γ : Ctx) (t : Exp) (e : Dne) : Prop :=
   Γ ⊢ t : T /\
-    forall Δ, exists u, Rⁿᵉ ⦇ length (Δ ++ Γ) ⦈ e ↘ u /\ (Δ ++ Γ) ⊨ t [subst_from_weaken Δ] ≈ u : T.
+    forall Δ, exists u, Rⁿᵉ ⦇ length (Δ ++ Γ) ⦈ e ↘ u /\ (Δ ++ Γ) ⊢ t [subst_from_weaken Δ] ≈ u : T.
 
 Notation " t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈" := (KripkeCandidateSpaceUpper T Γ t d)
   (at level 48, d at next level, T at next level, no associativity).
@@ -111,28 +111,25 @@ Proof.
   intros. econstructor; eauto using subst_from_weaken_sound.
 Qed.
 
+Hint Constructors Typing SubstTyping ExpEq SubstEq : core.
+
 Lemma var_in_typ_structure : forall Γ T,
   (exp_var 0) × (dne_l (length Γ)) ∈ ⌊ T ⌋ ⦇ T :: Γ ⦈.
 Proof.
   intros. unfold KripkeCandidateSpaceLower. intuition.
-  - econstructor. auto.
   - exists (ne_v ((length (Δ ++ T :: Γ)) - length Γ - 1)). split; eauto.
     induction Δ.
     Opaque Nat.sub.
     + simpl. replace (S (length Γ) - length Γ - 1) with 0 by lia.
-      simpl. apply sem_eq_exp_subst_id.
-      apply sem_eq_exp_var; auto.
-    + simpl. eapply sem_eq_exp_trans with (t2:=exp_var 0 [subst_from_weaken Δ] [↑]).
-      * apply sem_eq_exp_symm. eapply sem_eq_exp_subst_comp with (Γ2:=Δ ++ T :: Γ) (Γ3:= T :: Γ); eauto.
-        apply sem_eq_subst_shift.
-        apply subst_typing_sem_eq_subst. 
+      simpl. auto. 
+    + simpl. eapply exp_eq_trans with (t2:=exp_var 0 [subst_from_weaken Δ] [↑]).
+      * apply exp_eq_symm. eapply exp_eq_prop_comp with (Γ2:=Δ ++ T :: Γ) (Γ3:= T :: Γ); eauto.
         eapply subst_from_weaken_sound.
-        apply sem_eq_exp_var; eauto.
-      * eapply sem_eq_exp_trans with (t2:=exp_var (length (Δ ++ T :: Γ) - length Γ - 1) [↑]).
-        -- eapply sem_eq_exp_subst; eauto. eapply sem_eq_subst_shift.
+      * eapply exp_eq_trans with (t2:=exp_var (length (Δ ++ T :: Γ) - length Γ - 1) [↑]); auto.
+        -- eapply exp_eq_comp_subst; eauto. 
         -- specialize (ext_length_gt Γ Δ T). intros.
-           replace (S (length (Δ ++ T :: Γ)) - length Γ - 1) with (1 + (length (Δ ++ T :: Γ) - length Γ - 1)) by lia.
-           eapply sem_eq_exp_shift; eauto.
+           replace (S (length (Δ ++ T :: Γ)) - length Γ - 1) with (1 + (length (Δ ++ T :: Γ) - length Γ - 1)) by lia. 
+           apply exp_eq_subst_shift. auto.
            clear IHΔ. clear H. induction Δ; simpl.
            ++ replace (S (length Γ) - length Γ - 1) with 0 by lia. auto.
            ++ specialize (ext_length_gt Γ Δ T). intros.
@@ -165,10 +162,6 @@ Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_
   intros. induction Δ1; simpl.
   - eapply subst_eq_idr... 
   - simpl. eapply subst_eq_trans with (σ2:=(subst_from_weaken Δ2 ∘ subst_from_weaken Δ1) ∘ ↑)...
-    apply subst_eq_symm.
-    eapply subst_eq_assoc...
-    eapply subst_eq_compat_comp; eauto.
-    eapply subst_eq_compat_shift; eauto.
 Qed.
 
 Lemma lower_subset_interp_typ_subset_upper : forall T Γ t,
@@ -193,14 +186,12 @@ Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_
     specialize (H8 Δ0). destruct H8 as [w].
     exists (ne_app u w). intuition. econstructor; eauto.
     rewrite list_concat_assoc; auto.
-    eapply sem_eq_exp_trans with (t2:=(t [subst_from_weaken Δ] [subst_from_weaken Δ0]) ▫ (s [subst_from_weaken Δ0])).
-    eapply sem_eq_exp_app_subst with (Δ:=Δ ++ Γ); eauto...
-    eapply sem_eq_exp_app; eauto. fold ne_to_exp.
-    eapply sem_eq_exp_trans with (t2:=t [subst_from_weaken Δ ∘ subst_from_weaken Δ0]).
-    eapply sem_eq_exp_subst_comp... 
-    eapply sem_eq_exp_trans with (t2:=t [subst_from_weaken (Δ0 ++ Δ)]); eauto.
-    eapply sem_eq_exp_subst...
-    eapply sem_subst_eq_subst_from_weaken_comp.
+    eapply exp_eq_trans with (t2:=(t [subst_from_weaken Δ] [subst_from_weaken Δ0]) ▫ (s [subst_from_weaken Δ0]))...
+    eapply exp_eq_comp_app; eauto. fold ne_to_exp.
+    eapply exp_eq_trans with (t2:=t [subst_from_weaken Δ ∘ subst_from_weaken Δ0])...
+    eapply exp_eq_trans with (t2:=t [subst_from_weaken (Δ0 ++ Δ)]); eauto.
+    eapply exp_eq_comp_subst...
+    eapply syn_subst_eq_subst_from_weaken_comp.
     rewrite list_concat_assoc. auto.
   - simpl in *. 
     unfold KripkeArrSpace in H. intuition.
@@ -216,15 +207,9 @@ Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_
     unfold KripkeCandidateSpaceUpper in H5. intuition.
     specialize (H8 nil). destruct H8 as [w]... simpl in *. intuition.
     exists (nf_abs w). intuition; eauto.
-    eapply sem_eq_exp_trans with (t2:=exp_abs ((t [subst_from_weaken Δ] [↑])  ▫ (exp_var 0))).
-    eapply sem_eq_exp_abs_eta...
-    eapply sem_eq_exp_abs. fold ne_to_exp. fold nf_to_exp.
-    eapply sem_eq_exp_trans with (t2:=(t [subst_from_weaken Δ ∘ ↑] ▫ exp_var 0))...
-    eapply sem_eq_exp_app with (S:=T1)...
-    eapply sem_eq_exp_subst_comp...
-    apply typing_sem_eq_exp... econstructor...
-    eapply sem_eq_exp_trans with (t2:= (t [subst_from_weaken Δ ∘ ↑] ▫ exp_var 0) [es_id])...
-    eapply sem_eq_exp_symm. eapply sem_eq_exp_subst_id...
+    eapply exp_eq_trans with (t2:=exp_abs ((t [subst_from_weaken Δ] [↑])  ▫ (exp_var 0)))...
+    eapply exp_eq_ext_xi. fold ne_to_exp. fold nf_to_exp.
+    eapply exp_eq_trans with (t2:=(t [subst_from_weaken Δ ∘ ↑] ▫ exp_var 0))...
 Qed.
 
 Corollary lower_subst_interp_typ : forall Γ e t T,
@@ -252,8 +237,8 @@ Proof with eauto using ExpEq, SubstEq, typing_sem_eq_exp, subst_typing_sem_eq_su
   - simpl in *. unfold KripkeCandidateSpaceUpper in *. intuition.
     eapply syn_exp_eq_typing_r; eauto.
     pose proof (H2 Δ). destruct H0 as [w]. exists w. intuition.
-    apply sem_eq_exp_trans with (t2:=t [subst_from_weaken Δ]); auto.
-    eapply sem_eq_exp_subst... apply sem_eq_exp_symm... eapply syn_eq_exp_sem_eq_exp...
+    apply exp_eq_trans with (t2:=t [subst_from_weaken Δ]); auto.
+    eapply exp_eq_comp_subst...
   - simpl in *. unfold KripkeArrSpace in *. intuition.
     eapply syn_exp_eq_typing_r; eauto.
     apply H2 in H0 as IH1. destruct IH1 as [b]. exists b. intuition.
@@ -265,8 +250,6 @@ Proof with eauto using ExpEq, SubstEq, typing_sem_eq_exp, subst_typing_sem_eq_su
     apply in_typ_structure_wf in H0 as IH3. apply exp_eq_refl; eauto.
 Qed.
 
-Hint Constructors Typing SubstTyping ExpEq SubstEq : core.
-
 Lemma in_interp_typ_weaken : forall Δ T Γ t a,
   t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> 
   t [subst_from_weaken Δ] × a ∈ ⟦ T ⟧ ⦇ Δ ++ Γ ⦈.
@@ -277,15 +260,15 @@ Proof with eauto 4 using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_fro
     + simpl in *. unfold KripkeCandidateSpaceUpper in *. intuition...
       specialize (H1 (Δ0 ++ a :: Δ)). destruct H1 as [w].
       exists w. Opaque length. simpl_alist in *. intuition...
-      eapply sem_eq_exp_trans with (t2:=t [(subst_from_weaken Δ ∘ ↑) ∘ subst_from_weaken Δ0]).
-      eapply sem_eq_exp_subst_comp... simpl.
-      eapply sem_eq_subst_comp...
-      eapply sem_eq_exp_trans with (t2:=t [subst_from_weaken (Δ0 ++ one a ++ Δ)])...
-      eapply sem_eq_exp_subst...
-      eapply sem_eq_subst_trans with (σ2:= subst_from_weaken (one a ++ Δ) ∘ subst_from_weaken Δ0)...
-      eapply sem_eq_subst_comp... simpl. eapply sem_eq_subst_comp...
+      eapply exp_eq_trans with (t2:=t [(subst_from_weaken Δ ∘ ↑) ∘ subst_from_weaken Δ0])...
+      eapply exp_eq_prop_comp... simpl...
+      eapply exp_eq_trans with (t2:=t [subst_from_weaken (Δ0 ++ one a ++ Δ)])...
+      eapply exp_eq_comp_subst; eauto.
+      eapply subst_eq_trans with (σ2:= subst_from_weaken (one a ++ Δ) ∘ subst_from_weaken Δ0); eauto.
+      eapply subst_eq_compat_comp with (Γ2:=one a ++ Δ ++ Γ); simpl; eauto...
+      apply subst_eq_refl... apply subst_eq_refl...
       replace (Δ0 ++ one a ++ Δ ++ Γ) with (Δ0 ++ (one a ++ Δ) ++ Γ). 
-      eapply sem_subst_eq_subst_from_weaken_comp.
+      eapply syn_subst_eq_subst_from_weaken_comp.
       simpl_alist. auto.
     + intros. simpl in *. unfold KripkeArrSpace in *.  intuition...
       specialize (H1 (Δ0 ++ a :: Δ)). simpl_alist in *. apply H1 in H as IH1.
@@ -368,7 +351,7 @@ Proof.
   dependent destruction H0. dependent destruction H0_. auto.
 Qed.
 
-Hint Constructors EvalRel AppRel RecRel SubstRel : core.
+Hint Constructors EvalRel AppRel RecRel SubstRel RNeRel RNfRel: core.
 
 Lemma logical_rel_var : forall Γ i T,
   nth_error Γ i = Some T ->
@@ -377,3 +360,15 @@ Proof.
   intros. unfold ExpLogicalRel. intros. exists (ρ i). intuition.
   unfold FutureContext in H0. intuition.
 Qed.
+
+Lemma logical_rel_zero : forall Γ,
+  Γ ⫢ exp_zero : ℕ.
+Proof.
+  intros. unfold ExpLogicalRel. intros. unfold FutureContext in H. intuition. 
+  exists d_zero. intuition.
+  apply syn_eq_exp_in_interp_typ with (t:=exp_zero). simpl.
+  apply exp_eq_symm. eapply exp_eq_prop_zero; eauto. simpl.
+  unfold KripkeCandidateSpaceUpper. intuition.
+  exists nf_zero. intuition.
+  admit.
+Admitted.
