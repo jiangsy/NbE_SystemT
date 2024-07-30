@@ -2,7 +2,6 @@ Require Import Coq.Program.Equality.
 Require Import Coq.Lists.List.
 Require Import Lia.
 
-
 Require Import nbe.systemt.extensional.list.
 Require Import nbe.systemt.extensional.syntax.
 Require Import nbe.systemt.extensional.semantic.
@@ -25,6 +24,8 @@ Lemma subst_from_weaken_sound : forall Γ Δ,
 Proof.
   intros. induction Δ; simpl in *; eauto.
 Qed.
+
+Hint Resolve subst_from_weaken_sound : core.
 
 Fixpoint nf_to_exp (w : Nf) : Exp :=
   match w with 
@@ -124,7 +125,6 @@ Proof.
       simpl. auto. 
     + simpl. eapply exp_eq_trans with (t2:=exp_var 0 [subst_from_weaken Δ] [↑]).
       * apply exp_eq_symm. eapply exp_eq_prop_comp with (Γ2:=Δ ++ T :: Γ) (Γ3:= T :: Γ); eauto.
-        eapply subst_from_weaken_sound.
       * eapply exp_eq_trans with (t2:=exp_var (length (Δ ++ T :: Γ) - length Γ - 1) [↑]); auto.
         -- eapply exp_eq_comp_subst; eauto. 
         -- specialize (ext_length_gt Γ Δ T). intros.
@@ -245,7 +245,7 @@ Proof with eauto using ExpEq, SubstEq, typing_sem_eq_exp, subst_typing_sem_eq_su
     eapply IHT2; eauto...
     eapply in_typ_structure_wf in H5 as IH2. dependent destruction IH2.
     eapply exp_eq_comp_app with (S:=T1); eauto...
-    eapply exp_eq_comp_subst; eauto. apply subst_eq_refl. apply subst_from_weaken_sound.
+    eapply exp_eq_comp_subst; eauto. 
     eapply typing_weaken with (Δ:=Δ) in H1.
     apply in_typ_structure_wf in H0 as IH3. apply exp_eq_refl; eauto.
 Qed.
@@ -266,7 +266,7 @@ Proof with eauto 4 using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_fro
       eapply exp_eq_comp_subst; eauto.
       eapply subst_eq_trans with (σ2:= subst_from_weaken (one a ++ Δ) ∘ subst_from_weaken Δ0); eauto.
       eapply subst_eq_compat_comp with (Γ2:=one a ++ Δ ++ Γ); simpl; eauto...
-      apply subst_eq_refl... apply subst_eq_refl...
+      apply subst_eq_refl... 
       replace (Δ0 ++ one a ++ Δ ++ Γ) with (Δ0 ++ (one a ++ Δ) ++ Γ). 
       eapply syn_subst_eq_subst_from_weaken_comp.
       simpl_alist. auto.
@@ -351,7 +351,7 @@ Proof.
   dependent destruction H0. dependent destruction H0_. auto.
 Qed.
 
-Hint Constructors EvalRel AppRel RecRel SubstRel RNeRel RNfRel: core.
+Hint Constructors EvalRel AppRel RecRel SubstRel RNeRel RNfRel Typing SubstTyping : core.
 
 Lemma logical_rel_var : forall Γ i T,
   nth_error Γ i = Some T ->
@@ -370,5 +370,57 @@ Proof.
   apply exp_eq_symm. eapply exp_eq_prop_zero; eauto. simpl.
   unfold KripkeCandidateSpaceUpper. intuition.
   exists nf_zero. intuition.
-  admit.
+  eapply exp_eq_prop_zero; eauto.
+Qed.
+
+Lemma logical_rel_suc : forall Γ t,
+  Γ ⫢ t : ℕ ->
+  Γ ⫢ (exp_suc t) : ℕ.
+Proof.
+  intros. unfold ExpLogicalRel in *. intros.
+  apply H in H0. destruct H0 as [a].
+  exists (d_suc a). intuition. simpl in *. unfold KripkeCandidateSpaceUpper in *.
+  intuition; eauto.
+  dependent destruction H0.
+  eapply syn_exp_eq_typing_l with (t':=exp_suc (t [σ])). eapply exp_eq_prop_suc; eauto.
+  specialize (H3 Δ0). destruct H3 as [w].
+  exists (nf_suc w). intuition; eauto.
+  apply exp_eq_comp_suc in H4.
+  apply exp_eq_trans with (t2:=exp_suc (t [σ]) [subst_from_weaken Δ0]); eauto.
+  eapply exp_eq_comp_subst; eauto.
+  dependent destruction H0.
+  eapply exp_eq_prop_suc; eauto.
+Qed.
+
+Lemma logical_rel_abs : forall Γ t S T,
+  (S :: Γ) ⫢ t : T ->
+  Γ ⫢ (λ t) : S → T.
+Proof.
+  intros. pose proof (exp_logical_rel_typing _ _ _ H) as Htyping. 
+  unfold ExpLogicalRel in *. intros.
+  exists (d_abs t ρ). intuition. simpl. unfold KripkeArrSpace. intuition.
+  unfold FutureContext in H0. intuition. econstructor; eauto. 
+  specialize (H (ρ ↦ a) ((es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0)) ∘ (es_ext es_id s)) (Δ0 ++ Δ)).
+  assert (((es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0)) ∘ (es_ext es_id s)) × (ρ ↦ a) ∈ (Δ0 ++ Δ) ≤ (S :: Γ)) by admit. 
+  (* {
+    unfold FutureContext in H0. intuition.
+    apply in_typ_structure_wf in H1 as Htyp.
+    unfold FutureContext. intuition. 
+    - apply styping_comp with (Γ2:=S :: Δ0 ++ Δ); eauto.
+    - destruct i; simpl in *. dependent destruction H0. 
+      unfold Ftur
+    admit.
+      
+  } *)
+  apply H in H2. destruct H2 as [b]. exists b. intuition.
+  unfold FutureContext in H0. intuition.
+  apply in_typ_structure_wf in H1 as Htyp.
+  eapply syn_eq_exp_in_interp_typ with (t:= exp_abs (t [(es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0))]) ▫ s).
+  eapply exp_eq_comp_app with (S:=S); eauto.
+  eapply exp_eq_trans with (t2:=(λ t) [σ ∘ subst_from_weaken Δ0]); eauto.
+  eapply syn_eq_exp_in_interp_typ with (t:= (t [(es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0))] [es_ext es_id s])).
+  apply exp_eq_symm. eapply exp_eq_beta_abs with (S:=S); eauto. econstructor; eauto. econstructor; eauto.
+  eapply syn_eq_exp_in_interp_typ with (t:= (t [(es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0)) ∘ (es_ext es_id s)])); eauto.
+  apply exp_eq_symm. eapply exp_eq_prop_comp with (Γ2:=S :: Δ0 ++ Δ) (Γ3:=S :: Γ).
+  econstructor; eauto. econstructor; eauto. auto.
 Admitted.

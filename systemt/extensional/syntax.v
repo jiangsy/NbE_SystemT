@@ -109,7 +109,7 @@ Inductive ExpEq : Ctx -> Exp -> Exp -> Typ -> Prop :=
 | exp_eq_beta_abs : forall Γ s t S T,
     (S :: Γ) ⊢ t : T ->
     Γ ⊢ s : S ->
-    Γ ⊢ exp_app (exp_abs t) s ≈ exp_subst t  (es_ext es_id s) : T
+    Γ ⊢ exp_app (exp_abs t) s ≈ exp_subst t (es_ext es_id s) : T
 | exp_eq_beta_rec_zero : forall Γ tz ts T,
     Γ ⊢ tz : T ->
     Γ ⊢ ts : ℕ → T → T ->
