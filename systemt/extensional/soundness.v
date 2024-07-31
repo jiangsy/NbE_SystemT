@@ -441,3 +441,81 @@ Proof.
   apply subst_eq_symm. eapply subst_eq_prop with (Γ':=S :: Δ0 ++ Δ); eauto.
   eauto.
 Qed.
+
+Lemma logical_rel_rec : forall Γ ts tz tn T,
+  Γ ⫢ tz : T ->
+  Γ ⫢ ts : ℕ → T → T ->
+  Γ ⫢ tn : ℕ ->
+  Γ ⫢ exp_rec T tz ts tn : T.
+Proof.
+Admitted.
+
+Lemma logical_rel_app : forall Γ r s S T,
+  Γ ⫢ r : S → T ->
+  Γ ⫢ s : S ->
+  Γ ⫢ r ▫ s : T.
+Proof.
+Admitted.
+
+Lemma logical_rel_subst : forall Γ Δ t σ T,
+  Γ ⫢s σ : Δ ->
+  Δ ⫢ t : T ->
+  Γ ⫢ t [ σ ] : T. 
+Proof.
+Admitted.
+
+Lemma subst_logical_rel_id : forall Γ,
+  Γ ⫢s es_id : Γ.
+Proof.
+Admitted.
+
+Lemma subst_logical_rel_shift : forall Γ T,
+  (T :: Γ) ⫢s ↑ : Γ.
+Proof.
+Admitted.
+
+Lemma subst_logical_rel_comp : forall Γ1 Γ2 Γ3 σ1 σ2,
+  Γ1 ⫢s σ1 : Γ2 ->
+  Γ2 ⫢s σ2 : Γ3 ->
+  Γ1 ⫢s σ2 ∘ σ1 : Γ3.
+Proof.
+Admitted.
+
+Lemma subst_logical_rel_ext : forall Γ Δ σ s S,
+  Γ ⫢s σ : Δ ->
+  Γ ⫢ s : S ->
+  Γ ⫢s es_ext σ s : (S :: Δ).
+Proof.
+Admitted.
+
+Lemma typing_subst_typing_exp_subst_logical_relation : 
+  (forall Γ t T, Γ ⊢ t : T -> Γ ⫢ t : T) /\
+  (forall Γ σ Δ, Γ ⊢s σ : Δ -> Γ ⫢s σ : Δ).
+Proof with eauto.
+  apply typing_subst_typing_mutind; intros.
+  - apply logical_rel_var...
+  - apply logical_rel_abs...
+  - eapply logical_rel_app...
+  - apply logical_rel_zero.
+  - apply logical_rel_suc...
+  - apply logical_rel_rec...
+  - eapply logical_rel_subst...
+  - eapply subst_logical_rel_shift...
+  - eapply subst_logical_rel_id...
+  - eapply subst_logical_rel_comp...
+  - eapply subst_logical_rel_ext...
+Qed.
+
+Lemma typing_exp_logical_rel : forall Γ t T,
+  Γ ⊢ t : T ->
+  Γ ⫢ t : T.
+Proof with eauto.
+  pose proof typing_subst_typing_exp_subst_logical_relation. intuition.
+Qed.
+
+Lemma subst_typing_subst_logical_rel : forall Γ σ Δ,
+  Γ ⊢s σ : Δ -> 
+  Γ ⫢s σ : Δ.
+Proof with eauto.
+  pose proof typing_subst_typing_exp_subst_logical_relation. intuition.
+Qed.
