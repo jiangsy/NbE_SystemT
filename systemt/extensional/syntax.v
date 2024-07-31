@@ -79,7 +79,7 @@ with  SubstTyping : Ctx -> Subst -> Ctx -> Prop :=
     Γ1 ⊢s τ : Γ2 ->
     Γ2 ⊢s σ : Γ3 ->
     Γ1 ⊢s (σ ∘ τ) : Γ3
-  | styping_exp : forall Γ Δ σ s S,
+  | styping_ext : forall Γ Δ σ s S,
     Γ ⊢s σ : Δ ->
     Γ ⊢ s : S ->
     Γ ⊢s (es_ext σ s) : (S :: Δ)

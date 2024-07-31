@@ -1,6 +1,8 @@
 Require Import Coq.Program.Equality.
 Require Import Coq.Lists.List.
 Require Import Lia.
+Require Import Setoid Morphisms.
+
 
 Require Import nbe.systemt.extensional.list.
 Require Import nbe.systemt.extensional.syntax.
@@ -392,6 +394,10 @@ Proof.
   eapply exp_eq_prop_suc; eauto.
 Qed.
 
+(* Declare Instance Equivalence_eq (Γ : Ctx) (T : Typ) : Equivalence ((fun Γ T t t' => ExpEq Γ t t' T) Γ T).
+Declare Instance Proper_Typing (Γ : Ctx) (T : Typ) : Proper (eq) ((fun Γ T t => Typing Γ t T) Γ T).
+Declare Instance Proper_ExpLogicalRel (Γ : Ctx) (T : Typ) (a : D): Proper (eq) (fun t => (interp_typ T) Γ t a). *)
+
 Lemma logical_rel_abs : forall Γ t S T,
   (S :: Γ) ⫢ t : T ->
   Γ ⫢ (λ t) : S → T.
@@ -400,27 +406,38 @@ Proof.
   unfold ExpLogicalRel in *. intros.
   exists (d_abs t ρ). intuition. simpl. unfold KripkeArrSpace. intuition.
   unfold FutureContext in H0. intuition. econstructor; eauto. 
-  specialize (H (ρ ↦ a) ((es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0)) ∘ (es_ext es_id s)) (Δ0 ++ Δ)).
-  assert (((es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0)) ∘ (es_ext es_id s)) × (ρ ↦ a) ∈ (Δ0 ++ Δ) ≤ (S :: Γ)) by admit. 
-  (* {
+  specialize (H (ρ ↦ a) (es_ext (σ ∘ subst_from_weaken Δ0) s) (Δ0 ++ Δ)).
+  assert ((es_ext (σ ∘ subst_from_weaken Δ0) s) × (ρ ↦ a) ∈ (Δ0 ++ Δ) ≤ (S :: Γ)).
+  {
     unfold FutureContext in H0. intuition.
     apply in_typ_structure_wf in H1 as Htyp.
     unfold FutureContext. intuition. 
-    - apply styping_comp with (Γ2:=S :: Δ0 ++ Δ); eauto.
-    - destruct i; simpl in *. dependent destruction H0. 
-      unfold Ftur
-    admit.
-      
-  } *)
+    - eapply styping_ext; eauto.
+    - destruct i; simpl in *. 
+      + dependent destruction H0. eapply syn_eq_exp_in_interp_typ; eauto. 
+      + eapply syn_eq_exp_in_interp_typ; eauto.
+        apply H3 in H0 as IH. apply in_interp_typ_weaken with (Δ:=Δ0) in IH.
+        eapply syn_eq_exp_in_interp_typ with (t:=exp_var i [σ] [subst_from_weaken Δ0]); eauto.
+  } 
   apply H in H2. destruct H2 as [b]. exists b. intuition.
   unfold FutureContext in H0. intuition.
   apply in_typ_structure_wf in H1 as Htyp.
   eapply syn_eq_exp_in_interp_typ with (t:= exp_abs (t [(es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0))]) ▫ s).
   eapply exp_eq_comp_app with (S:=S); eauto.
   eapply exp_eq_trans with (t2:=(λ t) [σ ∘ subst_from_weaken Δ0]); eauto.
-  eapply syn_eq_exp_in_interp_typ with (t:= (t [(es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0))] [es_ext es_id s])).
-  apply exp_eq_symm. eapply exp_eq_beta_abs with (S:=S); eauto. econstructor; eauto. econstructor; eauto.
-  eapply syn_eq_exp_in_interp_typ with (t:= (t [(es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0)) ∘ (es_ext es_id s)])); eauto.
-  apply exp_eq_symm. eapply exp_eq_prop_comp with (Γ2:=S :: Δ0 ++ Δ) (Γ3:=S :: Γ).
-  econstructor; eauto. econstructor; eauto. auto.
-Admitted.
+  eapply syn_eq_exp_in_interp_typ with (t := (t [(es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0))] [es_ext es_id s])). 
+  apply exp_eq_symm. eapply exp_eq_beta_abs with (S:=S); eauto. eauto.  econstructor; eauto. eauto. 
+  eapply syn_eq_exp_in_interp_typ with (t := t [(es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0)) ∘ (es_ext es_id s)]); eauto.
+  apply exp_eq_symm. eapply exp_eq_prop_comp with (Γ2 := S :: Δ0 ++ Δ); eauto. eauto.
+  eapply syn_eq_exp_in_interp_typ with (t:= t [es_ext (σ ∘ subst_from_weaken Δ0) s]); eauto.
+  eapply exp_eq_comp_subst with (Δ := S::Γ)...
+  eapply subst_eq_trans with (σ2 := es_ext (((σ ∘ subst_from_weaken Δ0) ∘ ↑) ∘ es_ext es_id s) ((exp_var 0) [es_ext es_id s])).
+  eapply subst_eq_compat_ext...
+  eapply subst_eq_trans with (σ2 := (σ ∘ subst_from_weaken Δ0) ∘ (↑ ∘ es_ext es_id s)); eauto.
+  eapply subst_eq_trans with (σ2 := (σ ∘ subst_from_weaken Δ0) ∘ es_id); eauto.
+  eapply subst_eq_compat_comp; eauto. apply subst_eq_refl... econstructor; eauto.
+  apply subst_eq_symm. eapply subst_eq_assoc with (Γ3:=S :: Δ0 ++ Δ); eauto. 
+  eapply exp_eq_trans with (t2 := s [es_id]); eauto.
+  apply subst_eq_symm. eapply subst_eq_prop with (Γ':=S :: Δ0 ++ Δ); eauto.
+  eauto.
+Qed.
