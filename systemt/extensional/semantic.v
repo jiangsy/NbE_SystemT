@@ -195,7 +195,7 @@ with RNeRel : nat -> Dne -> Ne -> Prop :=
     Rⁿᶠ ⦇ n ⦈ dz ↘ vz ->
     Rⁿᶠ ⦇ n ⦈ ds ↘ vs ->
     Rⁿᵉ ⦇ n ⦈ e ↘ u ->
-    Rⁿᵉ ⦇ n ⦈ (dne_rec T dz ds e) ↘ (ne_rec T vs vs u)
+    Rⁿᵉ ⦇ n ⦈ (dne_rec T dz ds e) ↘ (ne_rec T vz vs u)
 where " 'Rⁿᶠ' ⦇ n ⦈ d ↘ v" := (RNfRel n d v) and 
       " 'Rⁿᵉ' ⦇ n ⦈ e ↘ u" := (RNeRel n e u).
 

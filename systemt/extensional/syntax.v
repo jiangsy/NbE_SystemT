@@ -1,4 +1,5 @@
 Require Import Coq.Lists.List.
+Require Import Lia.
 
 Inductive Typ : Set :=
   | typ_nat : Typ
@@ -275,6 +276,13 @@ Proof with eauto using Typing, SubstTyping.
     eapply typing_subst with (Δ := S :: Δ)...
 Qed.
 
+
+Corollary syn_exp_eq_typing : forall Γ t t' T,
+  Γ ⊢ t ≈ t' : T -> Γ ⊢ t : T /\ Γ ⊢ t' : T.
+Proof.
+  pose proof syn_exp_eq_subst_eq_typing_subst_typing. intuition.
+Qed.
+
 Corollary syn_exp_eq_typing_l : forall Γ t t' T,
   Γ ⊢ t ≈ t' : T -> Γ ⊢ t : T.
 Proof.
@@ -301,4 +309,46 @@ Corollary syn_subst_eq_subst_typing_r : forall Γ σ σ' Δ,
 Proof.
   pose proof syn_exp_eq_subst_eq_typing_subst_typing. intuition.
   apply H1 in H. intuition.
+Qed.
+
+Definition syn_pred (t : Exp) : Exp :=
+  exp_rec ℕ exp_zero (exp_abs (exp_abs (exp_var 1))) t.
+
+Lemma syn_pred_typing : forall Γ t,
+  Γ ⊢ t : ℕ ->
+  Γ ⊢ syn_pred t : ℕ.
+Proof with eauto using Typing.
+  intros. unfold syn_pred...
+Qed.
+
+Lemma exp_eq_pred_suc : forall Γ t,
+  Γ ⊢ t : ℕ ->
+  Γ ⊢ syn_pred (exp_suc t) ≈ t : ℕ.
+Proof with eauto 6 using Typing, SubstTyping, ExpEq, SubstEq.
+  intros. unfold syn_pred. 
+  apply exp_eq_trans with (t2:=(λ (λ exp_var 1)) ▫ t ▫ (exp_rec ℕ exp_zero (λ (λ exp_var 1)) t)).
+  apply exp_eq_beta_rec_suc... 
+  apply exp_eq_trans with (t2:= (exp_subst (λ exp_var 1) (es_ext es_id t))▫ (exp_rec ℕ exp_zero (λ (λ exp_var 1)) t))...
+  eapply exp_eq_comp_app with (S:=ℕ)...
+  eapply exp_eq_beta_abs... econstructor... apply exp_eq_refl...
+  eapply exp_eq_trans with (t2:=(exp_abs (exp_subst (exp_var 1) (es_ext ((es_ext es_id t) ∘ ↑) (exp_var 0)))) ▫ exp_rec ℕ exp_zero (λ (λ exp_var 1)) t); eauto.
+  eapply exp_eq_comp_app with (S:=ℕ); eauto.
+  eapply exp_eq_ext_prop with (Δ:=ℕ :: Γ)...
+  eapply exp_eq_refl...
+  eapply exp_eq_trans with (t2:=(exp_var 1 [es_ext (es_ext es_id t ∘ ↑) (exp_var 0)]) [ es_ext es_id (exp_rec ℕ exp_zero (λ (λ exp_var 1)) t)]); eauto.
+  eapply exp_eq_beta_abs... eapply typing_subst with (Δ:=ℕ :: ℕ :: Γ)...
+  eapply exp_eq_trans with (t2:=(exp_var 0 [(es_ext es_id t ∘ ↑)]) [ es_ext es_id (exp_rec ℕ exp_zero (λ (λ exp_var 1)) t)]); eauto...
+  replace 1 with (1 + 0) at 1.
+  eapply exp_eq_comp_subst with (Δ:=ℕ::Γ); eauto. apply subst_eq_refl...
+  eapply exp_eq_subst_exts with (S:=ℕ)... lia. 
+  eapply exp_eq_trans with (t2:=exp_var 0 [es_ext es_id t ∘ ↑] [es_ext es_id (exp_rec ℕ exp_zero (λ (λ exp_var 1)) t)]); eauto.
+  eapply exp_eq_refl... eapply typing_subst with (Δ:=ℕ :: Γ)... 
+  eapply exp_eq_trans with (t2:=exp_var 0 [es_ext ( es_id ∘ ↑ ) ( t [ ↑ ]) ] [es_ext es_id (exp_rec ℕ exp_zero (λ (λ exp_var 1)) t)]); eauto.
+  eapply exp_eq_comp_subst with (Δ:=ℕ :: Γ)... eapply subst_eq_refl...
+  eapply exp_eq_trans with (t2:= (t [ ↑ ]) [es_ext es_id (exp_rec ℕ exp_zero (λ (λ exp_var 1)) t)])...
+  eapply exp_eq_comp_subst... eapply subst_eq_refl...
+  eapply exp_eq_trans with (t2:=t [ es_id ])...
+  eapply exp_eq_trans with (t2:=t [ ↑ ∘ es_ext es_id (exp_rec ℕ exp_zero (λ (λ exp_var 1)) t)])...
+  eapply exp_eq_prop_comp...
+  eapply exp_eq_comp_subst...
 Qed.
