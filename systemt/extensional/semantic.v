@@ -70,15 +70,15 @@ with EvalRel : Exp -> Env -> D -> Prop :=
     ⟦ t ⟧ ρ' ↘ a ->
     ⟦ exp_subst t σ ⟧ ρ ↘ a
 with RecRel : Typ -> D -> D -> D -> D -> Prop :=
-  | rec_ze : forall az aₛ T, 
-    rec( T , az , aₛ , d_zero ) ↘ az
-  | rec_suc : forall az aₛ an f a b T,
-    rec( T , az , aₛ , an) ↘ a ->
-    aₛ ∙ an ↘ f ->
+  | rec_ze : forall bz bs T, 
+    rec( T , bz , bs , d_zero ) ↘ bz
+  | rec_suc : forall bz bs bn f a b T,
+    rec( T , bz , bs , bn) ↘ a ->
+    bs ∙ bn ↘ f ->
     f ∙ a ↘ b ->
-    rec( T , az , aₛ , d_suc an ) ↘ b
-  | rec_rec : forall az aₛ e T,
-    rec( T , az , aₛ , d_refl ℕ e) ↘ d_refl T (dne_rec T (dnf_reif T az) (dnf_reif (ℕ → T → T) aₛ) e)
+    rec( T , bz , bs , d_suc bn ) ↘ b
+  | rec_rec : forall bz bs e T,
+    rec( T , bz , bs , d_refl ℕ e) ↘ d_refl T (dne_rec T (dnf_reif T bz) (dnf_reif (ℕ → T → T) bs) e)
 with SubstRel : Subst -> Env -> Env -> Prop :=
   | subst_shift : forall ρ,
     ⟦ ↑ ⟧s ρ ↘ (drop ρ)
@@ -108,7 +108,7 @@ Combined Scheme app_eval_rec_subst_mutind from app_ind, eval_ind, rec_ind, subst
 Lemma app_eval_rec_subst_det : 
   ( forall f a b1, f ∙ a ↘ b1 -> forall b2, f ∙ a ↘ b2 ->  b1 = b2 ) /\
   ( forall t ρ a1, ⟦ t ⟧ ρ ↘ a1 -> forall a2, ⟦ t ⟧ ρ ↘ a2 -> a1 = a2 ) /\
-  ( forall T az aₛ an d1, rec( T , az , aₛ , an ) ↘ d1 -> forall d2,  rec( T , az , aₛ , an ) ↘ d2 -> d1 = d2 ) /\
+  ( forall T bz bs bn d1, rec( T , bz , bs , bn ) ↘ d1 -> forall d2,  rec( T , bz , bs , bn ) ↘ d2 -> d1 = d2 ) /\
   ( forall σ ρ ρ1', ⟦ σ ⟧s ρ ↘ ρ1' -> forall ρ2', ⟦ σ ⟧s ρ ↘ ρ2' -> ρ1' = ρ2' ).
 Proof.
   apply app_eval_rec_subst_mutind; intros; 
@@ -151,9 +151,9 @@ Proof.
   specialize app_eval_rec_subst_det. intuition. eauto.
 Qed.
 
-Theorem rec_det : forall T az aₛ an a1 a2, 
-  rec( T , az , aₛ , an ) ↘ a1 -> 
-  rec( T , az , aₛ , an ) ↘ a2 -> 
+Theorem rec_det : forall T bz bs bn a1 a2, 
+  rec( T , bz , bs , bn ) ↘ a1 -> 
+  rec( T , bz , bs , bn ) ↘ a2 -> 
   a1 = a2.
 Proof.  
   specialize app_eval_rec_subst_det. intuition. eauto.

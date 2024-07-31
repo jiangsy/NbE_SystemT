@@ -635,22 +635,22 @@ Proof.
   exists dz, dz'. intuition; eauto.
 Qed.
 
-Lemma rec_rec : forall az az' aₛ aₛ' an an' T,
-  az ≈ az' ∈ ⟦ T ⟧T ->
-  aₛ ≈ aₛ' ∈ ⟦ ℕ → T → T ⟧T ->
-  an ≈ an' ∈ ⟦ ℕ ⟧T ->
-  exists a a', RecRel T az aₛ an a /\ RecRel T az' aₛ' an' a' /\ a ≈ a' ∈ ⟦ T ⟧T.
+Lemma rec_rec : forall bz bz' bs bs' bn bn' T,
+  bz ≈ bz' ∈ ⟦ T ⟧T ->
+  bs ≈ bs' ∈ ⟦ ℕ → T → T ⟧T ->
+  bn ≈ bn' ∈ ⟦ ℕ ⟧T ->
+  exists a a', RecRel T bz bs bn a /\ RecRel T bz' bs' bn' a' /\ a ≈ a' ∈ ⟦ T ⟧T.
 Proof.
   intros. simpl in H1. induction H1; auto.
-  - exists az, az'; intuition; eauto.
+  - exists bz, bz'; intuition; eauto.
   - destruct IHSemTypNat as [b [b']].
     simpl in *. unfold SemArr in H0. 
     apply H0 in H1. destruct H1 as [f [f']].
     intuition.
     apply H6 in H7. destruct H7 as [a1 [a1']].
     exists a1, a1'. intuition; eauto.
-  - exists ( d_refl T (dne_rec T (dnf_reif T az) (dnf_reif (ℕ → T → T) aₛ) e)).
-    exists ( d_refl T (dne_rec T (dnf_reif T az') (dnf_reif (ℕ → T → T) aₛ') e')). 
+  - exists ( d_refl T (dne_rec T (dnf_reif T bz) (dnf_reif (ℕ → T → T) bs) e)).
+    exists ( d_refl T (dne_rec T (dnf_reif T bz') (dnf_reif (ℕ → T → T) bs') e')). 
     intuition.
     eauto using sem_bot_rec, bot_subset_T, T_subset_top.
 Qed.
@@ -663,9 +663,9 @@ Lemma sem_eq_exp_rec : forall Γ tz tz' ts ts' tn tn' T,
 Proof.
   intros. unfold SemEqExp in *. intro.
   intros. apply H in H2 as IH1. apply H0 in H2 as IH2. apply H1 in H2 as IH3.
-  destruct IH1 as [az [az']].
-  destruct IH2 as [aₛ [aₛ']].
-  destruct IH3 as [an [an']].
+  destruct IH1 as [bz [bz']].
+  destruct IH2 as [bs [bs']].
+  destruct IH3 as [bn [bn']].
   intuition.
   eapply rec_rec in H11; eauto. destruct H11 as [b [b']].
   exists b, b'. intuition; eauto.
@@ -681,9 +681,9 @@ Proof.
   apply H in H2 as IH1.
   apply H0 in H2 as IH2.
   apply H1 in H2 as IH3.
-  destruct IH1 as [az [az']].
-  destruct IH2 as [aₛ [aₛ']].
-  destruct IH3 as [an [an']]. intuition.
+  destruct IH1 as [bz [bz']].
+  destruct IH2 as [bs [bs']].
+  destruct IH3 as [bn [bn']]. intuition.
   eapply rec_rec in H11 as IH; eauto.
   destruct IH as [a1 [a1']]. intuition.
   simpl in *. unfold SemArr in H11.
@@ -705,9 +705,9 @@ Proof.
   apply H0 in H7 as IH2.
   apply H1 in H7 as IH3.
   apply H2 in H7 as IH4. 
-  destruct IH2 as [az [az']].
-  destruct IH3 as [aₛ [aₛ']].
-  destruct IH4 as [an [an']].
+  destruct IH2 as [bz [bz']].
+  destruct IH3 as [bs [bs']].
+  destruct IH4 as [bn [bn']].
   intuition.
   eapply rec_rec in H15; eauto. destruct H15 as [a [a']].
   exists a, a'. intuition; eauto.

@@ -437,21 +437,21 @@ Proof.
   unfold syn_pred. apply exp_eq_comp_rec; eauto.
 Qed.
 
-Lemma logical_rec_helper: forall Γ Δ σ ρ tz ts az aₛ an w T,
+Lemma logical_rec_helper: forall Γ Δ σ ρ tz ts bz bs bn w T,
   σ × ρ ∈ Δ ≤ Γ ->
   Γ ⊢ tz : T ->
-  ⟦ tz ⟧ ρ ↘ az ->
-  tz [ σ ] × az ∈ ⟦ T ⟧ ⦇ Δ ⦈ ->
+  ⟦ tz ⟧ ρ ↘ bz ->
+  tz [ σ ] × bz ∈ ⟦ T ⟧ ⦇ Δ ⦈ ->
   Γ ⊢ ts : ℕ → T → T ->
-  ⟦ ts ⟧ ρ ↘ aₛ ->
-  ts [ σ ] × aₛ ∈ ⟦ ℕ → T → T ⟧ ⦇ Δ ⦈ ->
+  ⟦ ts ⟧ ρ ↘ bs ->
+  ts [ σ ] × bs ∈ ⟦ ℕ → T → T ⟧ ⦇ Δ ⦈ ->
   Δ ⊢ (nf_to_exp w) : ℕ ->
-  w × an ∈ ⟦ ℕ ⟧ ⦇ Δ ⦈ ->
-  Rⁿᶠ ⦇ length Δ ⦈ (dnf_reif ℕ an) ↘ w ->
-  exists a, rec( T , az , aₛ , an ) ↘ a /\ (exp_rec T ( tz [ σ ] ) ( ts [ σ ]) w) × a ∈ ⟦ T ⟧ ⦇ Δ ⦈.
+  w × bn ∈ ⟦ ℕ ⟧ ⦇ Δ ⦈ ->
+  Rⁿᶠ ⦇ length Δ ⦈ (dnf_reif ℕ bn) ↘ w ->
+  exists a, rec( T , bz , bs , bn ) ↘ a /\ (exp_rec T ( tz [ σ ] ) ( ts [ σ ]) w) × a ∈ ⟦ T ⟧ ⦇ Δ ⦈.
 Proof.
   intros. dependent induction H8.
-  - exists az; intuition.
+  - exists bz; intuition.
     eapply syn_eq_exp_in_interp_typ with (t:=tz [ σ ]); auto.
     apply exp_eq_symm.
     apply exp_eq_beta_rec_zero; auto. 
@@ -484,7 +484,7 @@ Proof.
       specialize (H10 Δ). destruct H10 as [w]. intuition. dependent destruction H10.
       exists t0. intuition. apply syn_eq_inv_suc. 
       apply exp_eq_trans with (t2 := exp_suc t [subst_from_weaken Δ]); eauto.
-  - exists (d_refl T (dne_rec T (dnf_reif T az) (dnf_reif (ℕ → T → T) aₛ) e)). intuition.
+  - exists (d_refl T (dne_rec T (dnf_reif T bz) (dnf_reif (ℕ → T → T) bs) e)). intuition.
     apply in_typ_structure_wf in H2 as Hwfz.
     apply in_typ_structure_wf in H5 as Hwfs.
     eapply lower_subst_interp_typ. unfold KripkeCandidateSpaceLower. intuition.
@@ -511,9 +511,9 @@ Proof.
   apply exp_logical_rel_typing in H1 as Htypn.
   unfold ExpLogicalRel in *. intros.
   apply H in H2 as IH1. apply H0 in H2 as IH2. apply H1 in H2 as IH3.
-  destruct IH1 as [az].
-  destruct IH2 as [aₛ].
-  destruct IH3 as [an]. intuition.
+  destruct IH1 as [bz].
+  destruct IH2 as [bs].
+  destruct IH3 as [bn]. intuition.
   simpl in H9. unfold KripkeCandidateSpaceUpper in H9. intuition.
   specialize (H10 nil) as H11. destruct H11 as [w]. intuition. 
   eapply logical_rec_helper in H8 as IH1; eauto 4.
@@ -668,7 +668,7 @@ Lemma typing_exp_logical_rel : forall Γ t T,
   Γ ⫢ t : T.
 Proof with eauto.
   pose proof typing_subst_typing_exp_subst_logical_relation. intuition.
-Qed.
+Qed. 
 
 Lemma subst_typing_subst_logical_rel : forall Γ σ Δ,
   Γ ⊢s σ : Δ -> 
