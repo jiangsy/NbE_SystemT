@@ -352,3 +352,20 @@ Proof with eauto 6 using Typing, SubstTyping, ExpEq, SubstEq.
   eapply exp_eq_prop_comp...
   eapply exp_eq_comp_subst...
 Qed.
+
+Fixpoint nf_to_exp (w : Nf) : Exp :=
+  match w with 
+  | nf_abs w' => exp_abs (nf_to_exp w')
+  | nf_suc w' => exp_suc (nf_to_exp w')
+  | nf_zero => exp_zero
+  | nf_ne u => ne_to_exp u
+  end
+with ne_to_exp (u : Ne) : Exp :=
+  match u with
+  | ne_app u' w => exp_app (ne_to_exp u') (nf_to_exp w)
+  | ne_rec T wz ws un => exp_rec T (nf_to_exp wz) (nf_to_exp ws) (ne_to_exp un)
+  | ne_v i => exp_var i
+  end.
+
+Coercion nf_to_exp : Nf >-> Exp.
+Coercion ne_to_exp : Ne >-> Exp.

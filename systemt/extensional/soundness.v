@@ -3,7 +3,7 @@ Require Import Coq.Lists.List.
 Require Import Lia.
 Require Import Setoid Morphisms.
 
-
+Require Import nbe.systemt.extensional.nbe.
 Require Import nbe.systemt.extensional.list.
 Require Import nbe.systemt.extensional.syntax.
 Require Import nbe.systemt.extensional.semantic.
@@ -28,23 +28,6 @@ Proof.
 Qed.
 
 Hint Resolve subst_from_weaken_sound : core.
-
-Fixpoint nf_to_exp (w : Nf) : Exp :=
-  match w with 
-  | nf_abs w' => exp_abs (nf_to_exp w')
-  | nf_suc w' => exp_suc (nf_to_exp w')
-  | nf_zero => exp_zero
-  | nf_ne u => ne_to_exp u
-  end
-with ne_to_exp (u : Ne) : Exp :=
-  match u with
-  | ne_app u' w => exp_app (ne_to_exp u') (nf_to_exp w)
-  | ne_rec T wz ws un => exp_rec T (nf_to_exp wz) (nf_to_exp ws) (ne_to_exp un)
-  | ne_v i => exp_var i
-  end.
-
-Coercion nf_to_exp : Nf >-> Exp.
-Coercion ne_to_exp : Ne >-> Exp.
 
 Definition KripkeCandidateSpaceUpper (T : Typ) (Γ : Ctx) (t : Exp) (d : D) : Prop :=
   Γ ⊢ t : T /\
@@ -704,4 +687,16 @@ Proof with eauto.
   pose proof typing_subst_typing_exp_subst_logical_relation. intuition.
 Qed.
 
-Print Assumptions subst_typing_subst_logical_rel.
+Lemma soundness : forall Γ t T,
+  Γ ⊢ t : T ->
+  Soundness Γ t T (init_env Γ).
+Proof.
+  intros. apply typing_exp_logical_rel in H as IH. unfold ExpLogicalRel in IH.
+  pose proof (init_env_future_context Γ).
+  apply IH in H0. unfold Soundness. destruct H0 as [a].
+  intuition.
+  apply interp_typ_subset_upper in H2. unfold KripkeCandidateSpaceUpper in H2.
+  intuition. specialize (H3 nil). destruct H3 as [w].
+  exists w. unfold Nbe. intuition; eauto.
+  simpl in *. apply exp_eq_trans with (t2:=t [es_id]); eauto.
+Qed.

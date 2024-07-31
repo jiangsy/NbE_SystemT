@@ -9,3 +9,6 @@ Definition Completenss' (n : nat) (ρ ρ' : Env) (s t : Exp) (T : Typ) :=
 
 Definition Completenss (n : nat) (ρ : Env) (s t : Exp) (T : Typ) :=
   exists w, Nbe n ρ s T w /\ Nbe n ρ t T w.
+
+Definition Soundness (Γ : Ctx) (t : Exp) (T : Typ) (ρ : Env) : Prop :=
+  exists w, Nbe (length Γ) ρ t T w /\ Γ ⊢ t ≈ w : T.
