@@ -336,7 +336,7 @@ Proof.
   dependent destruction H0. dependent destruction H0_. auto.
 Qed.
 
-Hint Constructors EvalRel AppRel RecRel SubstRel RNeRel RNfRel Typing SubstTyping : core.
+Hint Constructors EvalRel AppRel RecRel SubstRel RNeRel RNfRel : core.
 
 Lemma logical_rel_var : forall Γ i T,
   nth_error Γ i = Some T ->
@@ -437,63 +437,62 @@ Proof.
   unfold syn_pred. apply exp_eq_comp_rec; eauto.
 Qed.
 
-Lemma logical_rec_helper: forall Γ Δ σ ρ tz ts bz bs bn w T,
+Lemma suc_in_nat_space_inv : forall t a Γ,
+  exp_suc t × d_suc a ∈ ⌈ ℕ ⌉ ⦇ Γ ⦈ ->
+  t × a ∈ ⌈ ℕ ⌉ ⦇ Γ ⦈.
+Proof.
+  intros. unfold KripkeCandidateSpaceUpper in *; intuition; dependent destruction H0; auto.
+  - specialize (H1 Δ). destruct H1 as [w]. intuition.
+    dependent destruction H1. exists t0. intuition.
+    apply syn_eq_inv_suc. 
+    apply exp_eq_trans with (t2 := exp_suc t [subst_from_weaken Δ]); eauto.
+Qed.
+
+Lemma logical_rec_helper: forall Γ Δ σ ρ tz ts bz bs bn (w : Nf) T,
   σ × ρ ∈ Δ ≤ Γ ->
-  Γ ⊢ tz : T ->
   ⟦ tz ⟧ ρ ↘ bz ->
   tz [ σ ] × bz ∈ ⟦ T ⟧ ⦇ Δ ⦈ ->
-  Γ ⊢ ts : ℕ → T → T ->
   ⟦ ts ⟧ ρ ↘ bs ->
   ts [ σ ] × bs ∈ ⟦ ℕ → T → T ⟧ ⦇ Δ ⦈ ->
-  Δ ⊢ (nf_to_exp w) : ℕ ->
   w × bn ∈ ⟦ ℕ ⟧ ⦇ Δ ⦈ ->
   Rⁿᶠ ⦇ length Δ ⦈ (dnf_reif ℕ bn) ↘ w ->
   exists a, rec( T , bz , bs , bn ) ↘ a /\ (exp_rec T ( tz [ σ ] ) ( ts [ σ ]) w) × a ∈ ⟦ T ⟧ ⦇ Δ ⦈.
 Proof.
-  intros. dependent induction H8.
+  intros. dependent induction H5.
   - exists bz; intuition.
     eapply syn_eq_exp_in_interp_typ with (t:=tz [ σ ]); auto.
     apply exp_eq_symm.
     apply exp_eq_beta_rec_zero; auto. 
     eapply in_typ_structure_wf; eauto.
     eapply in_typ_structure_wf; eauto.
-  - eapply IHRNfRel in H5 as IH; eauto. 
+  - eapply IHRNfRel in H3 as IH; eauto. 
     + destruct IH as [b']. intuition.
-      simpl in H5. unfold KripkeArrSpace in H5. intuition.
-      assert (t × a ∈ ⌈ ℕ ⌉ ⦇ nil ++ Δ ⦈). {
-        dependent destruction H6.
-        unfold KripkeCandidateSpaceUpper in *. simpl in *. intuition. 
-        unfold KripkeCandidateSpaceUpper in H7. intuition.
-        specialize (H13 Δ). destruct H13 as [w]. intuition. dependent destruction H13. exists t0. intuition.
-        simpl in *. apply syn_eq_inv_suc.
-        apply exp_eq_trans with (t2:=exp_suc t [subst_from_weaken Δ]); eauto.
-      }
-      apply H12 in H5. destruct H5 as [f]. intuition.
-      replace Δ with (nil ++ nil ++ Δ) in H11 by auto.
-      apply H15 in H11. destruct H11 as [b]. exists b. simpl in *. intuition.
+      simpl in H3. unfold KripkeArrSpace in H3. intuition.
+      apply in_typ_structure_wf in H4 as Hwft. dependent destruction Hwft.
+      apply suc_in_nat_space_inv in H4. fold nf_to_exp in H4.
+      replace Γ0 with (nil ++ Γ0) in H4 by auto. 
+      apply H9 in H4 as IH. destruct IH as [f]. intuition.
+      replace Γ0 with (nil ++ Γ0) in H8 by auto.
+      apply H12 in H8. destruct H8 as [b]. exists b. simpl in *. intuition.
       eauto.
-      apply in_typ_structure_wf in H2 as Hwfz.
+      apply in_typ_structure_wf in H1 as Hwfz.
       eapply syn_eq_exp_in_interp_typ with (t:=((ts [σ] [es_id] ▫ t) [es_id] ▫ exp_rec T (tz [σ]) (ts [σ]) t)); auto.
-      dependent destruction H6.
       eapply exp_eq_trans with (t2:= (ts [ σ ] ▫ t) ▫ exp_rec T (tz [σ]) (ts [σ]) t); eauto.
       eapply exp_eq_comp_app with (S := T); eauto.
       apply exp_eq_trans with (t2:=(ts [σ] [es_id] ▫ t)); eauto. eapply exp_eq_comp_app; eauto.
-      apply exp_eq_refl. eauto.
-    + dependent destruction H6. auto.
-    + intros. simpl in *. unfold KripkeCandidateSpaceUpper in *. dependent destruction H6. intuition.
-      specialize (H10 Δ). destruct H10 as [w]. intuition. dependent destruction H10.
-      exists t0. intuition. apply syn_eq_inv_suc. 
-      apply exp_eq_trans with (t2 := exp_suc t [subst_from_weaken Δ]); eauto.
+      apply exp_eq_refl. eauto. 
+    + apply suc_in_nat_space_inv; eauto. 
   - exists (d_refl T (dne_rec T (dnf_reif T bz) (dnf_reif (ℕ → T → T) bs) e)). intuition.
-    apply in_typ_structure_wf in H2 as Hwfz.
-    apply in_typ_structure_wf in H5 as Hwfs.
+    apply in_typ_structure_wf in H1 as Hwfz.
+    apply in_typ_structure_wf in H3 as Hwfs.
+    apply in_typ_structure_wf in H4 as Hwfn.
     eapply lower_subst_interp_typ. unfold KripkeCandidateSpaceLower. intuition.
-    apply interp_typ_subset_upper in H2.
-    apply interp_typ_subset_upper in H5.
-    simpl in H7.
+    apply interp_typ_subset_upper in H1.
+    apply interp_typ_subset_upper in H3.
+    simpl in H4.
     unfold KripkeCandidateSpaceUpper in *. intuition.
-    specialize (H10 Δ0). specialize (H11 Δ0). specialize (H12 Δ0). destruct H10 as [wz]. destruct H11 as [ws]. destruct H12 as [wn]. intuition.
-    dependent destruction H10.
+    specialize (H7 Δ0). specialize (H8 Δ0). specialize (H9 Δ0). destruct H7 as [wz]. destruct H8 as [ws]. destruct H9 as [wn]. intuition.
+    dependent destruction H7.
     exists (ne_rec T wz ws t0). intuition. 
     eapply exp_eq_trans with (t2:=exp_rec T (tz [σ]  [subst_from_weaken Δ0]) (ts [σ] [subst_from_weaken Δ0]) (nf_ne t [subst_from_weaken Δ0])); eauto.
     eapply exp_eq_comp_rec; auto. 
@@ -516,17 +515,16 @@ Proof.
   destruct IH3 as [bn]. intuition.
   simpl in H9. unfold KripkeCandidateSpaceUpper in H9. intuition.
   specialize (H10 nil) as H11. destruct H11 as [w]. intuition. 
-  eapply logical_rec_helper in H8 as IH1; eauto 4.
+  eapply logical_rec_helper with (bz:=bz) (bn:=bn)  in H8 as IH1; eauto 4.
   - destruct IH1 as [a]. exists a.
     intuition; eauto.
     apply in_typ_structure_wf in H7 as Hwfz.
-    apply in_typ_structure_wf in H8 as Hwfs.
+    apply in_typ_structure_wf in H8 as Hwfs. 
     apply syn_eq_exp_in_interp_typ with (t:=exp_rec T (tz [σ]) (ts [σ]) w); auto.
     apply exp_eq_trans with (t2:=exp_rec T (tz [ σ ]) (ts [ σ ]) (tn [ σ ])); eauto.
     apply exp_eq_comp_rec; eauto.
     apply exp_eq_symm; eauto.
     eapply exp_eq_prop_rec; eauto. unfold FutureContext in H2. intuition.
-  - eapply syn_exp_eq_typing_r; eauto. 
   - intros. simpl. unfold KripkeCandidateSpaceUpper. intuition.
     + eapply syn_exp_eq_typing_r; eauto.
     + specialize (H10 Δ0). destruct H10 as [w']. exists w'. intuition.
@@ -675,6 +673,18 @@ Lemma subst_typing_subst_logical_rel : forall Γ σ Δ,
   Γ ⫢s σ : Δ.
 Proof with eauto.
   pose proof typing_subst_typing_exp_subst_logical_relation. intuition.
+Qed.
+
+Lemma totality : forall Γ t T,
+  Γ ⊢ t : T ->
+  exists w, Nbe (length Γ) (init_env Γ) t T w.
+Proof.
+  intros. apply typing_exp_logical_rel in H as IH. unfold ExpLogicalRel in IH.
+  pose proof (init_env_future_context Γ).
+  apply IH in H0. unfold Soundness. destruct H0 as [a]. intuition.
+  apply interp_typ_subset_upper in H2. unfold KripkeCandidateSpaceUpper in H2.
+  intuition. specialize (H3 nil). destruct H3 as [w].
+  exists w. unfold Nbe. intuition; eauto.
 Qed.
 
 Lemma soundness : forall Γ t T,
