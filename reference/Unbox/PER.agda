@@ -5,7 +5,7 @@ open import Axiom.Extensionality.Propositional
 
 module Unbox.PER (fext : Extensionality 0ℓ 0ℓ) where
 
-open import Lib
+open import Lib hiding (lookup)
 open import Unbox.Statics
 open import Unbox.Semantics
 open import Unbox.SemanticProps fext

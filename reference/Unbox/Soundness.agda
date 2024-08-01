@@ -5,7 +5,7 @@ open import Axiom.Extensionality.Propositional
 
 module Unbox.Soundness (fext : Extensionality 0ℓ 0ℓ) where
 
-open import Lib
+open import Lib hiding (lookup)
 
 open import Data.List.Properties as Lₚ
 open import Data.Nat.Properties as ℕₚ

@@ -535,10 +535,10 @@ Qed.
 
 Ltac destruct_es_id := 
   repeat 
-  match goal with 
-  | H : ?Γ ⊢ ?t [ es_id ] : ?T |- _ => dependent destruction H
-  | H : ?Γ ⊢s es_id : ?Δ |- _ => dependent destruction H
-  end.
+    match goal with 
+    | H : ?Γ ⊢ ?t [ es_id ] : ?T |- _ => dependent destruction H
+    | H : ?Γ ⊢s es_id : ?Δ |- _ => dependent destruction H
+    end.
 
 Lemma logical_rel_app : forall Γ r s S T,
   Γ ⫢ r : S → T ->

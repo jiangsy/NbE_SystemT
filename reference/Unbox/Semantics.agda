@@ -2,7 +2,7 @@
 
 module Unbox.Semantics where
 
-open import Lib
+open import Lib hiding (lookup)
 open import Unbox.Statics
 
 open import Relation.Binary using (Rel; REL)

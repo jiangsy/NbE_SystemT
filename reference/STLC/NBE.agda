@@ -1,6 +1,6 @@
 {-# OPTIONS --without-K --safe #-}
 
-module STLC.NBE where
+module STLC.NbE where
 
 open import Lib
 open import STLC.Statics
@@ -63,77 +63,43 @@ shiftₑ-shiftₑ (π₁ t) Γ⊆Γ′ Γ′⊆Γ″    = cong π₁ (shiftₑ-s
 shiftₑ-shiftₑ (π₂ t) Γ⊆Γ′ Γ′⊆Γ″    = cong π₂ (shiftₑ-shiftₑ t Γ⊆Γ′ Γ′⊆Γ″)
 shiftₑ-shiftₑ (t $ s) Γ⊆Γ′ Γ′⊆Γ″   = cong₂ _$_ (shiftₑ-shiftₑ t Γ⊆Γ′ Γ′⊆Γ″) (shiftₙ-shiftₙ s Γ⊆Γ′ Γ′⊆Γ″)
 
--- ⟦_⊢_⟧ : Ctx → Typ → Set
--- ⟦_⊢_⟧′ : Ctx → Typ → Set
 
--- ⟦ Γ ⊢ T ⟧ = Nf Γ T × ⟦ Γ ⊢ T ⟧′
+⟦_⊢_⟧ : Ctx → Typ → Set
+⟦ Γ ⊢ * ⟧     = ⊤
+⟦ Γ ⊢ S X U ⟧ = ⟦ Γ ⊢ S ⟧ × ⟦ Γ ⊢ U ⟧
+⟦ Γ ⊢ S ⟶ U ⟧ = ∀ {Γ′} → Γ ⊆ Γ′ → ⟦ Γ′ ⊢ S ⟧ → ⟦ Γ′ ⊢ U ⟧
 
--- ⟦ Γ ⊢ * ⟧′     = ⊤
--- ⟦ Γ ⊢ S X U ⟧′ = ⟦ Γ ⊢ S ⟧ × ⟦ Γ ⊢ U ⟧
--- ⟦ Γ ⊢ S ⟶ U ⟧′ = ∀ {Γ′} → Γ ⊆ Γ′ → ⟦ Γ′ ⊢ S ⟧ → ⟦ Γ′ ⊢ U ⟧
+reify : ⟦ Γ ⊢ T ⟧ → Nf Γ T
+reflect : Ne Γ T → ⟦ Γ ⊢ T ⟧
 
-module NBE₁ where
-  ⟦_⊢_⟧ : Ctx → Typ → Set
-  ⟦ Γ ⊢ * ⟧     = ⊤
-  ⟦ Γ ⊢ S X U ⟧ = ⟦ Γ ⊢ S ⟧ × ⟦ Γ ⊢ U ⟧
-  ⟦ Γ ⊢ S ⟶ U ⟧ = ∀ {Γ′} → Γ ⊆ Γ′ → ⟦ Γ′ ⊢ S ⟧ → ⟦ Γ′ ⊢ U ⟧
+reify {_} {*} sem           = *
+reify {_} {S X U} (s₁ , s₂) = pr (reify s₁) (reify s₂)
+reify {_} {S ⟶ U} sem       = Λ (reify (sem (S ∷ʳ ⊆-refl) (reflect (var 0d))))
 
-  reify : ⟦ Γ ⊢ T ⟧ → Nf Γ T
-  reflect : Ne Γ T → ⟦ Γ ⊢ T ⟧
+reflect {_} {*} t              = tt
+reflect {_} {S X U} t          = reflect (π₁ t) , reflect (π₂ t)
+reflect {_} {S ⟶ U} t Γ⊆Γ′ ⟦S⟧ = reflect (shiftₑ t Γ⊆Γ′ $ reify ⟦S⟧)
 
-  reify {_} {*} sem           = *
-  reify {_} {S X U} (s₁ , s₂) = pr (reify s₁) (reify s₂)
-  reify {_} {S ⟶ U} sem       = Λ (reify (sem (S ∷ʳ ⊆-refl) (reflect (var 0d))))
+shiftₛ : Γ ⊆ Γ′ → ⟦ Γ ⊢ T ⟧ → ⟦ Γ′ ⊢ T ⟧
+shiftₛ {_} {_} {*} Γ⊆Γ′ ⟦T⟧             = tt
+shiftₛ {_} {_} {S X U} Γ⊆Γ′ (⟦S⟧ , ⟦U⟧) = shiftₛ Γ⊆Γ′ ⟦S⟧ , shiftₛ Γ⊆Γ′ ⟦U⟧
+shiftₛ {_} {_} {S ⟶ U} Γ⊆Γ′ ⟦T⟧ Γ′⊆Γ″   = ⟦T⟧ (⊆-trans Γ⊆Γ′ Γ′⊆Γ″)
 
-  reflect {_} {*} t              = tt
-  reflect {_} {S X U} t          = reflect (π₁ t) , reflect (π₂ t)
-  reflect {_} {S ⟶ U} t Γ⊆Γ′ ⟦S⟧ = reflect (shiftₑ t Γ⊆Γ′ $ reify ⟦S⟧)
+⟦_⇒_⟧ : Ctx → Ctx → Set
+⟦_⇒_⟧ Γ = All ⟦ Γ ⊢_⟧
 
-  shiftₛ : Γ ⊆ Γ′ → ⟦ Γ ⊢ T ⟧ → ⟦ Γ′ ⊢ T ⟧
-  shiftₛ {_} {_} {*} Γ⊆Γ′ ⟦T⟧             = tt
-  shiftₛ {_} {_} {S X U} Γ⊆Γ′ (⟦S⟧ , ⟦U⟧) = shiftₛ Γ⊆Γ′ ⟦S⟧ , shiftₛ Γ⊆Γ′ ⟦U⟧
-  shiftₛ {_} {_} {S ⟶ U} Γ⊆Γ′ ⟦T⟧ Γ′⊆Γ″   = ⟦T⟧ (⊆-trans Γ⊆Γ′ Γ′⊆Γ″)
+eval : ⟦ Δ ⇒ Γ ⟧ → Trm Γ T → ⟦ Δ ⊢ T ⟧
+eval ΔΓ *              = tt
+eval ΔΓ (var T∈Γ)      = All′.lookup ΔΓ T∈Γ
+eval ΔΓ (pr s u)       = eval ΔΓ s , eval ΔΓ u
+eval ΔΓ (π₁ t)         = proj₁ (eval ΔΓ t)
+eval ΔΓ (π₂ t)         = proj₂ (eval ΔΓ t)
+eval ΔΓ (s $ u)        = eval ΔΓ s ⊆-refl (eval ΔΓ u)
+eval ΔΓ (Λ t) Δ⊆Γ′ ⟦S⟧ = eval (⟦S⟧ ∷ All′.map (shiftₛ Δ⊆Γ′) ΔΓ) t
 
-  ⟦_⇒_⟧ : Ctx → Ctx → Set
-  ⟦_⇒_⟧ Γ = All ⟦ Γ ⊢_⟧
+⇒-id : ⟦ Γ ⇒ Γ ⟧
+⇒-id {[]}    = []
+⇒-id {T ∷ Γ} = reflect (var 0d) ∷ All′.map (shiftₛ (T ∷ʳ ⊆-refl)) ⇒-id
 
-  eval : ⟦ Δ ⇒ Γ ⟧ → Trm Γ T → ⟦ Δ ⊢ T ⟧
-  eval ΔΓ *              = tt
-  eval ΔΓ (var T∈Γ)      = All′.lookup ΔΓ T∈Γ
-  eval ΔΓ (pr s u)       = eval ΔΓ s , eval ΔΓ u
-  eval ΔΓ (π₁ t)         = proj₁ (eval ΔΓ t)
-  eval ΔΓ (π₂ t)         = proj₂ (eval ΔΓ t)
-  eval ΔΓ (s $ u)        = eval ΔΓ s ⊆-refl (eval ΔΓ u)
-  eval ΔΓ (Λ t) Δ⊆Γ′ ⟦S⟧ = eval (⟦S⟧ ∷ All′.map (shiftₛ Δ⊆Γ′) ΔΓ) t
-
-  ⇒-id : ⟦ Γ ⇒ Γ ⟧
-  ⇒-id {[]}    = []
-  ⇒-id {T ∷ Γ} = reflect (var 0d) ∷ All′.map (shiftₛ (T ∷ʳ ⊆-refl)) ⇒-id
-
-  nbe : Trm Γ T → Nf Γ T
-  nbe t = reify (eval ⇒-id t)
-
-  -- test : (Γ : Ctx) (T : Typ) → Set
-  -- test Γ T = {!nbe {(T ⟶ T) ∷ []} (var 0d)!}
-
-
-module NBE₂ where
-
-  CPred : Set₁
-  CPred = Ctx → Set
-
-  ⟦_⟧ : Typ → CPred
-  ⟦ * ⟧ _      = ⊤
-  ⟦ S X U ⟧ Γ  = ⟦ S ⟧ Γ × ⟦ U ⟧ Γ
-  ⟦ S ⟶ U ⟧ Γ = ∀ {Γ′} → Γ ⊆ Γ′ → ⟦ S ⟧ Γ′ → ⟦ U ⟧ Γ′
-
-  mutual
-    reify : ∀ {Γ} T → ⟦ T ⟧ Γ → Nf Γ T
-    reify * ⟦T⟧               = *
-    reify (S X U) (⟦S⟧ , ⟦U⟧) = pr (reify S ⟦S⟧) (reify U ⟦U⟧)
-    reify (S ⟶ U) ⟦T⟧         = Λ (reify U (⟦T⟧ (S ∷ʳ ⊆-refl) (reflect S (var 0d))))
-
-    reflect : ∀ {Γ} T → Ne Γ T → ⟦ T ⟧ Γ
-    reflect * t                = tt
-    reflect (S X U) t          = reflect S (π₁ t) , reflect U (π₂ t)
-    reflect (S ⟶ U) t Γ⊆Γ′ ⟦S⟧ = reflect U (shiftₑ t Γ⊆Γ′ $ (reify S ⟦S⟧))
+nbe : Trm Γ T → Nf Γ T
+nbe t = reify (eval ⇒-id t)

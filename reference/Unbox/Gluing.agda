@@ -2,7 +2,7 @@
 
 module Unbox.Gluing where
 
-open import Lib
+open import Lib hiding (lookup)
 
 open import Data.List.Properties as Lₚ
 

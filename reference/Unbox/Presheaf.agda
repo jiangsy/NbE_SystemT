@@ -344,9 +344,9 @@ mutual
 ↑Ψ Ψ = Ind.wfRec (λ Ψ → ⟦ Ψ ⟧Es Ψ) helper Ψ
   where module Wflen = Wf.InverseImage {_<_ = Lib._<_} (length {A = Ctx})
         module Ind   = Wf.All (Wflen.wellFounded <-wellFounded) 0ℓ
-        helper : ∀ Ψ → (∀ Ψ′ → len Ψ′ < len Ψ → ⟦ Ψ′ ⟧Es Ψ′) → ⟦ Ψ ⟧Es Ψ
+        helper : ∀ Ψ → (∀ {Ψ′} → len Ψ′ < len Ψ → ⟦ Ψ′ ⟧Es Ψ′) → ⟦ Ψ ⟧Es Ψ
         helper (Γ ∷ []) rec      = ↑Γ Γ , _
-        helper (Γ ∷ Γ′ ∷ Γs) rec = ↑Γ Γ , Γ ∷ [] , Γ′ ∷ Γs , refl , rec (Γ′ ∷ Γs) Nₚ.≤-refl
+        helper (Γ ∷ Γ′ ∷ Γs) rec = ↑Γ Γ , Γ ∷ [] , Γ′ ∷ Γs , refl , rec {Γ′ ∷ Γs} Nₚ.≤-refl
 
 nbe : Exp T Ψ → Nf T Ψ
 nbe {T} {Ψ} t = ↓ T (⟦ t ⟧ (↑Ψ Ψ))

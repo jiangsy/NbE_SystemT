@@ -158,7 +158,7 @@ module Direct where
 
   R-subst : {σ : Subst [] Γ} → Forall R σ → (t : Trm Γ T) → R (t ⟦ σ ⟧)
   R-subst R* *                 = (* , ε , *) , tt
-  R-subst R* (var T∈)          = Forall′.lookup R* T∈
+  R-subst R* (var T∈)          = Forall′.lookup′ R* T∈
   R-subst R* (pr s u)          = R-pr (R-subst R* s) (R-subst R* u)
   R-subst R* (π₁ t)            = R-π₁ (R-subst R* t)
   R-subst R* (π₂ t)            = R-π₂ (R-subst R* t)
@@ -198,7 +198,7 @@ module Another where
 
   R-subst : {σ : Subst [] Γ} → Forall (λ t → Σ (Value t) (RV t)) σ → (t : Trm Γ T) → R (t ⟦ σ ⟧)
   R-subst R* *                              = * , ε , * , tt
-  R-subst R* (var T∈)                       = RV⇒R (proj₂ (Forall′.lookup R* T∈))
+  R-subst R* (var T∈)                       = RV⇒R (proj₂ (Forall′.lookup′ R* T∈))
   R-subst R* (pr s u)
     with R-subst R* s | R-subst R* u
   ...  | s′ , ↦*s′ , v  , Rv

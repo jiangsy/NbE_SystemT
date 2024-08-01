@@ -24,15 +24,13 @@ data Subst : Set
 
 infixl 10 _$_
 infixl 11 _[_]
-
--- domains, extended with Nat and rec, using explicit substitution
-data Exp where                                -- p.p. 18 && p.p. 22 && p.p 26
-  v    : (x : ℕ) → Exp                        -- variables
-  ze   : Exp                                  -- zero
-  su   : Exp → Exp                            -- suc
-  rec  : (T : Typ) (z s t : Exp) → Exp        -- rec
-  Λ    : Exp → Exp                            -- λx. e
-  _$_  : Exp → Exp → Exp                      -- e1 e2
+data Exp where
+  v    : (x : ℕ) → Exp
+  ze   : Exp
+  su   : Exp → Exp
+  rec  : (T : Typ) (z s t : Exp) → Exp
+  Λ    : Exp → Exp
+  _$_  : Exp → Exp → Exp
   _[_] : Exp → Subst → Exp
 
 infixl 3 _∘_
@@ -57,7 +55,7 @@ I      ∘∘ Q T δ = Q T δ
 P .T σ ∘∘ Q T δ = P T (σ ∘∘ δ)
 Q .T σ ∘∘ Q T δ = Q T (σ ∘∘ δ)
 
-Weaken⇒Subst : Weaken Γ Δ → Subst --?
+Weaken⇒Subst : Weaken Γ Δ → Subst
 Weaken⇒Subst I        = I
 Weaken⇒Subst (P T wk) = Weaken⇒Subst wk ∘ ↑
 Weaken⇒Subst (Q T wk) = q (Weaken⇒Subst wk)
@@ -75,7 +73,7 @@ module Typing where
 
   mutual
 
-    data _⊢_∶_ : Ctx → Exp → Typ → Set where -- p.p. 24
+    data _⊢_∶_ : Ctx → Exp → Typ → Set where
       vlookup : ∀ {x} →
                 x ∶ T ∈ Γ →
                 ------------
@@ -117,7 +115,7 @@ module Typing where
 
   mutual
 
-    data _⊢_≈_∶_ : Ctx → Exp → Exp → Typ → Set where -- p.p. 28
+    data _⊢_≈_∶_ : Ctx → Exp → Exp → Typ → Set where
       v-≈      : ∀ {x} →
                  x ∶ T ∈ Γ →
                  --------------------------------------
@@ -132,7 +130,7 @@ module Typing where
                  --------------------------------------------
                  Γ ⊢ rec T s r t         ≈ rec T s′ r′ t′ ∶ T
       Λ-cong   : S ∷ Γ ⊢ t               ≈ t′ ∶ T →
-                 ----------------------------------------   -- ξ in Figure 3.5
+                 ----------------------------------------
                  Γ ⊢ Λ t                 ≈ Λ t′ ∶ S ⟶ T
       $-cong   : Γ ⊢ r                   ≈ r′ ∶ S ⟶ T →
                  Γ ⊢ s                   ≈ s′ ∶ S →
@@ -210,7 +208,7 @@ module Typing where
                  -----------------------------------
                  Γ ⊢ t                   ≈ t″ ∶ T
 
-    data _⊢s_≈_∶_ : Ctx → Subst → Subst → Ctx → Set where -- p.p. 29
+    data _⊢s_≈_∶_ : Ctx → Subst → Subst → Ctx → Set where
       ↑-≈       : S ∷ Γ ⊢s ↑           ≈ ↑             ∶ Γ
       I-≈       : Γ     ⊢s I           ≈ I             ∶ Γ
       ∘-cong    : Γ     ⊢s τ           ≈ τ′            ∶ Γ′ →
@@ -249,7 +247,7 @@ module Typing where
                   Γ     ⊢s σ           ≈ σ″            ∶ Δ
 
   mutual
-    -- reflexivity is derivable
+
     ≈-refl : Γ ⊢ t ∶ T → Γ ⊢ t ≈ t ∶ T
     ≈-refl (vlookup T∈Γ) = v-≈ T∈Γ
     ≈-refl ze-I          = ze-≈

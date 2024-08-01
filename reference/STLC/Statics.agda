@@ -2,7 +2,7 @@
 
 module STLC.Statics where
 
-open import Lib hiding (lookup)
+open import Lib
 
 open import Level renaming (suc to succ)
 open import Data.List.Properties
@@ -208,11 +208,11 @@ module Subst′ where
   map-≡ f g [] eq = refl
   map-≡ f g (t ∷ σ) eq = cong₂ _∷_ (eq t) (map-≡ f g σ eq)
 
-  lookup : Subst Γ Δ → T ∈ Δ → Trm Γ T
-  lookup (t ∷ σ) 0d       = t
-  lookup (t ∷ σ) (1+ T∈Δ) = lookup σ T∈Δ
+  lookup′ : Subst Γ Δ → T ∈ Δ → Trm Γ T
+  lookup′ (t ∷ σ) 0d       = t
+  lookup′ (t ∷ σ) (1+ T∈Δ) = lookup′ σ T∈Δ
 
-  lookup-map : (f : ∀ {T} → Trm Γ T → Trm Γ′ T) → (σ : Subst Γ Δ) → (T∈Δ : T ∈ Δ) → lookup (map f σ) T∈Δ ≡ f (lookup σ T∈Δ)
+  lookup-map : (f : ∀ {T} → Trm Γ T → Trm Γ′ T) → (σ : Subst Γ Δ) → (T∈Δ : T ∈ Δ) → lookup′ (map f σ) T∈Δ ≡ f (lookup′ σ T∈Δ)
   lookup-map f (t ∷ σ) 0d       = refl
   lookup-map f (t ∷ σ) (1+ T∈Δ) = lookup-map f σ T∈Δ
 
@@ -226,20 +226,20 @@ module Subst′ where
   id {[]}    = []
   id {T ∷ Γ} = qweaken T id
 
-  id-lookup : (T∈Γ : T ∈ Γ) → lookup id T∈Γ ≡ var T∈Γ
+  id-lookup : (T∈Γ : T ∈ Γ) → lookup′ id T∈Γ ≡ var T∈Γ
   id-lookup 0d           = refl
   id-lookup (there {S} T∈Γ)
     rewrite lookup-map (weaken-t S) id T∈Γ
           | id-lookup T∈Γ
           | ∈-⊆-refl T∈Γ = refl
 
-  weaken-lookup : ∀ T (σ : Subst Γ Δ) (S∈Δ : S ∈ Δ) → lookup (weaken T σ) S∈Δ ≡ weaken-t T (lookup σ S∈Δ)
+  weaken-lookup : ∀ T (σ : Subst Γ Δ) (S∈Δ : S ∈ Δ) → lookup′ (weaken T σ) S∈Δ ≡ weaken-t T (lookup′ σ S∈Δ)
   weaken-lookup T σ S∈Δ
     rewrite lookup-map (weaken-t T) σ S∈Δ = refl
 
   apply : Subst Γ Γ′ → Trm Γ′ T → Trm Γ T
   apply σ *          = *
-  apply σ (var T∈Γ′) = lookup σ T∈Γ′
+  apply σ (var T∈Γ′) = lookup′ σ T∈Γ′
   apply σ (pr s u)   = pr (apply σ s) (apply σ u)
   apply σ (π₁ t)     = π₁ (apply σ t)
   apply σ (π₂ t)     = π₂ (apply σ t)
@@ -268,7 +268,7 @@ module Subst′ where
   ⊆⇒Subst-refl (T ∷ Γ)
     rewrite ⊆⇒Subst-refl Γ = refl
 
-  ⊆⇒Subst-lookup : (Δ⊆Γ : Δ ⊆ Γ) (T∈Δ : T ∈ Δ) → var (∈-⊆ T∈Δ Δ⊆Γ) ≡ lookup (⊆⇒Subst Δ⊆Γ) T∈Δ
+  ⊆⇒Subst-lookup : (Δ⊆Γ : Δ ⊆ Γ) (T∈Δ : T ∈ Δ) → var (∈-⊆ T∈Δ Δ⊆Γ) ≡ lookup′ (⊆⇒Subst Δ⊆Γ) T∈Δ
   ⊆⇒Subst-lookup (S ∷ʳ Δ⊆Γ) T∈Δ
     rewrite weaken-lookup S (⊆⇒Subst Δ⊆Γ) T∈Δ
           | sym (⊆⇒Subst-lookup Δ⊆Γ T∈Δ)
@@ -311,13 +311,13 @@ module Subst′ where
   weaken-apply-gen : ∀ Δ S (σ : Subst Γ′ Γ) (t : Trm (Δ ++ Γ) T) → apply (weaken-Subst′ Δ S σ) (weakens-t Δ S t) ≡ weakens-t Δ S (apply (weaken-Subst Δ σ) t)
   weaken-apply-gen Δ S σ *        = refl
   weaken-apply-gen Δ S σ (var T∈) = helper Δ S σ T∈
-    where helper : ∀ Δ S (σ : Subst Γ′ Γ) (T∈ : T ∈ Δ ++ Γ) → lookup (weaken-Subst′ Δ S σ) (∈-⊆ T∈ (Δ ++ˡ S ∷ʳ ⊆-refl)) ≡ weakens-t Δ S (lookup (weaken-Subst Δ σ) T∈)
+    where helper : ∀ Δ S (σ : Subst Γ′ Γ) (T∈ : T ∈ Δ ++ Γ) → lookup′ (weaken-Subst′ Δ S σ) (∈-⊆ T∈ (Δ ++ˡ S ∷ʳ ⊆-refl)) ≡ weakens-t Δ S (lookup′ (weaken-Subst Δ σ) T∈)
           helper [] S (t ∷ σ) 0d      = refl
           helper [] S (_ ∷ σ) (1+ T∈) = helper [] S σ T∈
           helper (U ∷ Δ) S σ 0d       = refl
           helper (U ∷ Δ) S σ (1+ T∈)
             rewrite lookup-map (weaken-t U) (weaken-Subst Δ σ) T∈
-                  | weakens-weaken Δ U S (lookup (weaken-Subst Δ σ) T∈)
+                  | weakens-weaken Δ U S (lookup′ (weaken-Subst Δ σ) T∈)
                   | lookup-map (weaken-t U) (weaken-Subst′ Δ S σ) (∈-⊆ T∈ (Δ ++ˡ S ∷ʳ ⊆-refl))
                   | helper Δ S σ T∈   = refl
   weaken-apply-gen Δ S σ (pr s u) = cong₂ pr (weaken-apply-gen Δ S σ s) (weaken-apply-gen Δ S σ u)
@@ -332,7 +332,7 @@ module Subst′ where
   compose : Subst Γ Γ′ → Subst Γ′ Γ″ → Subst Γ Γ″
   compose σ δ = map (apply σ) δ
 
-  lookup-compose : (σ : Subst Γ Γ′) (δ : Subst Γ′ Γ″) (T∈Γ″ : T ∈ Γ″) → lookup (compose σ δ) T∈Γ″ ≡ apply σ (lookup δ T∈Γ″)
+  lookup-compose : (σ : Subst Γ Γ′) (δ : Subst Γ′ Γ″) (T∈Γ″ : T ∈ Γ″) → lookup′ (compose σ δ) T∈Γ″ ≡ apply σ (lookup′ δ T∈Γ″)
   lookup-compose σ δ T∈ = lookup-map (apply σ) δ T∈
 
   weaken-compose : ∀ {Γ Γ′ Γ″} T (σ : Subst Γ Γ′) (δ : Subst Γ′ Γ″) → weaken T (compose σ δ) ≡ compose (qweaken T σ) (weaken T δ)
@@ -357,30 +357,30 @@ module Subst′ where
   qweaken-apply-natural : ∀ (Δ⊆Δ′ : Δ ⊆ Δ′) (σ : Subst Γ′ Γ) (t : Trm (Δ ++ Γ) T) → apply (weaken-Subst Δ′ σ) (apply (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) t) ≡ apply (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ′)) (apply (weaken-Subst Δ σ) t)
   qweaken-apply-natural Δ⊆Δ′ σ *         = refl
   qweaken-apply-natural Δ⊆Δ′ σ (var T∈)  = helper′ Δ⊆Δ′ σ T∈
-    where helper : ∀ {Γ Γ′ Δ Δ′ T} (Δ⊆Δ′ : Δ ⊆ Δ′) (σ : Subst Γ′ Γ) (T∈ : T ∈ Δ ++ Γ) →  apply (weaken-Subst Δ′ σ) (lookup (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈) ≡ shift (lookup (weaken-Subst Δ σ) T∈) (Δ⊆Δ′ ++ʳ′ Γ′)
+    where helper : ∀ {Γ Γ′ Δ Δ′ T} (Δ⊆Δ′ : Δ ⊆ Δ′) (σ : Subst Γ′ Γ) (T∈ : T ∈ Δ ++ Γ) →  apply (weaken-Subst Δ′ σ) (lookup′ (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈) ≡ shift (lookup′ (weaken-Subst Δ σ) T∈) (Δ⊆Δ′ ++ʳ′ Γ′)
           helper {Γ} [] σ T∈
             rewrite ⊆⇒Subst-refl Γ
-                  | shift-refl (lookup σ T∈)
+                  | shift-refl (lookup′ σ T∈)
                   | id-lookup T∈                = refl
           helper {Γ} {Γ′} (_∷ʳ_ {Δ} {Δ′} S Δ⊆Δ′) σ T∈
             rewrite weaken-lookup S (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈
-                  | weaken-apply S (weaken-Subst Δ′ σ) (lookup (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈)
+                  | weaken-apply S (weaken-Subst Δ′ σ) (lookup′ (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈)
                   | helper Δ⊆Δ′ σ T∈
-                  | shift-shift (lookup (weaken-Subst Δ σ) T∈) (Δ⊆Δ′ ++ʳ′ Γ′) (S ∷ʳ ⊆-refl)
+                  | shift-shift (lookup′ (weaken-Subst Δ σ) T∈) (Δ⊆Δ′ ++ʳ′ Γ′) (S ∷ʳ ⊆-refl)
                   | ⊆-trans-refl (Δ⊆Δ′ ++ʳ′ Γ′) = refl
           helper (refl ∷ Δ⊆Δ′) σ 0d             = refl
           helper {Γ} {Γ′} (_∷_ {S} {Δ} {_} {Δ′} refl Δ⊆Δ′) σ (1+ T∈)
             rewrite weaken-lookup S (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈
-                  | weaken-apply S (weaken-Subst Δ′ σ) (lookup (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈)
+                  | weaken-apply S (weaken-Subst Δ′ σ) (lookup′ (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈)
                   | helper Δ⊆Δ′ σ T∈
-                  | shift-shift (lookup (weaken-Subst Δ σ) T∈) (Δ⊆Δ′ ++ʳ′ Γ′)(S ∷ʳ ⊆-refl)
+                  | shift-shift (lookup′ (weaken-Subst Δ σ) T∈) (Δ⊆Δ′ ++ʳ′ Γ′)(S ∷ʳ ⊆-refl)
                   | ⊆-trans-refl (Δ⊆Δ′ ++ʳ′ Γ′)
                   | weaken-lookup S (weaken-Subst Δ σ) T∈
-                  | shift-shift (lookup (weaken-Subst Δ σ) T∈) (S ∷ʳ ⊆-refl) (refl ∷ (Δ⊆Δ′ ++ʳ′ Γ′))
+                  | shift-shift (lookup′ (weaken-Subst Δ σ) T∈) (S ∷ʳ ⊆-refl) (refl ∷ (Δ⊆Δ′ ++ʳ′ Γ′))
                   | ⊆-refl-trans (Δ⊆Δ′ ++ʳ′ Γ′) = refl
-          helper′ : ∀ {Γ Γ′ Δ Δ′ T} (Δ⊆Δ′ : Δ ⊆ Δ′) (σ : Subst Γ′ Γ) (T∈ : T ∈ Δ ++ Γ) → apply (weaken-Subst Δ′ σ) (lookup (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈) ≡ apply (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ′)) (lookup (weaken-Subst Δ σ) T∈)
+          helper′ : ∀ {Γ Γ′ Δ Δ′ T} (Δ⊆Δ′ : Δ ⊆ Δ′) (σ : Subst Γ′ Γ) (T∈ : T ∈ Δ ++ Γ) → apply (weaken-Subst Δ′ σ) (lookup′ (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ)) T∈) ≡ apply (⊆⇒Subst (Δ⊆Δ′ ++ʳ′ Γ′)) (lookup′ (weaken-Subst Δ σ) T∈)
           helper′ {_} {Γ′} {Δ} Δ⊆Δ′ σ T∈
-            rewrite sym (shift-apply (lookup (weaken-Subst Δ σ) T∈) (Δ⊆Δ′ ++ʳ′ Γ′)) = helper Δ⊆Δ′ σ T∈
+            rewrite sym (shift-apply (lookup′ (weaken-Subst Δ σ) T∈) (Δ⊆Δ′ ++ʳ′ Γ′)) = helper Δ⊆Δ′ σ T∈
   qweaken-apply-natural Δ⊆Δ′ σ (pr s u)  = cong₂ pr (qweaken-apply-natural Δ⊆Δ′ σ s) (qweaken-apply-natural Δ⊆Δ′ σ u)
   qweaken-apply-natural Δ⊆Δ′ σ (π₁ t)    = cong π₁ (qweaken-apply-natural Δ⊆Δ′ σ t)
   qweaken-apply-natural Δ⊆Δ′ σ (π₂ t)    = cong π₂ (qweaken-apply-natural Δ⊆Δ′ σ t)
@@ -391,7 +391,7 @@ module Subst′ where
   id-compose []      = refl
   id-compose (t ∷ σ) = cong₂ _∷_ (id-apply t) (id-compose σ)
 
-  Subst-≡ : {σ δ : Subst Δ Γ} → (∀ {T} (T∈ : T ∈ Γ) → lookup σ T∈ ≡ lookup δ T∈) → σ ≡ δ
+  Subst-≡ : {σ δ : Subst Δ Γ} → (∀ {T} (T∈ : T ∈ Γ) → lookup′ σ T∈ ≡ lookup′ δ T∈) → σ ≡ δ
   Subst-≡ {_} {_} {[]} {[]} Pf        = refl
   Subst-≡ {_} {_} {t ∷ σ} {t′ ∷ δ} Pf = cong₂ _∷_ (Pf 0d) (Subst-≡ (λ T∈ → Pf (1+ T∈)))
 
@@ -401,8 +401,8 @@ module Subst′ where
   extend-weaken-gen : ∀ Δ (s : Trm Γ′ S) (σ : Subst Γ′ Γ) (t : Trm (Δ ++ Γ) T) → apply (weaken-Subst Δ (s ∷ σ)) (shift t (Δ ++ˡ S ∷ʳ ⊆-refl)) ≡ apply (weaken-Subst Δ σ) t
   extend-weaken-gen Δ s σ *        = refl
   extend-weaken-gen Δ s σ (var T∈) = helper Δ s σ T∈
-    where helper : ∀ Δ (s : Trm Γ′ S) (σ : Subst Γ′ Γ) (T∈ : T ∈ Δ ++ Γ) → lookup (weaken-Subst Δ (s ∷ σ)) (∈-⊆ T∈ (Δ ++ˡ S ∷ʳ ⊆-refl)) ≡ lookup (weaken-Subst Δ σ) T∈
-          helper [] s σ T∈                                = cong (lookup σ) (∈-⊆-refl T∈)
+    where helper : ∀ Δ (s : Trm Γ′ S) (σ : Subst Γ′ Γ) (T∈ : T ∈ Δ ++ Γ) → lookup′ (weaken-Subst Δ (s ∷ σ)) (∈-⊆ T∈ (Δ ++ˡ S ∷ʳ ⊆-refl)) ≡ lookup′ (weaken-Subst Δ σ) T∈
+          helper [] s σ T∈                                = cong (lookup′ σ) (∈-⊆-refl T∈)
           helper (U ∷ Δ) s σ 0d                           = refl
           helper (U ∷ Δ) s σ (1+ T∈)
             rewrite weaken-lookup U (weaken-Subst Δ (s ∷ σ)) (∈-⊆ T∈ (Δ ++ˡ _ ∷ʳ ⊆-refl))
@@ -436,6 +436,6 @@ module Forall′ where
 
   module _ {a} {P : ∀ {T} → Trm Γ T → Set a} where
 
-    lookup : {σ : Subst Γ Δ} → Forall P σ → (T∈Δ : T ∈ Δ) → P (Subst′.lookup σ T∈Δ)
-    lookup (Pt ∷ P*) 0d       = Pt
-    lookup (Pt ∷ P*) (1+ T∈Δ) = lookup P* T∈Δ
+    lookup′ : {σ : Subst Γ Δ} → Forall P σ → (T∈Δ : T ∈ Δ) → P (Subst′.lookup′ σ T∈Δ)
+    lookup′ (Pt ∷ P*) 0d       = Pt
+    lookup′ (Pt ∷ P*) (1+ T∈Δ) = lookup′ P* T∈Δ

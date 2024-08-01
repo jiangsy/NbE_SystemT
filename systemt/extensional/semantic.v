@@ -16,6 +16,12 @@ with Dnf : Set :=
 Notation " ( 'ƛ' t ) ρ " := (d_abs t ρ)
   (at level 55).
 
+(* Notation "🠑 T e" := (d_refl T e) 
+  (at level 9, T at level 9, no associativity).
+
+Notation " ↓ T d" := (dnf_reif T d) 
+  (at level 9, T at level 9, no associativity). *)
+
 Definition Env := nat -> D.
 
 Definition add (ρ : Env) (d : D) : Env :=
@@ -43,7 +49,7 @@ Inductive AppRel : D -> D -> D -> Prop :=
     ⟦ t ⟧ (ρ ↦ a) ↘ b ->
     (d_abs t ρ) ∙ a ↘ b
   | app_app : forall e d S T,
-    (d_refl (S → T) e) ∙ d ↘ (d_refl T (dne_app e (dnf_reif S d)))
+    (d_refl (S → T) e) ∙ d ↘ (d_refl T (dne_app e ( dnf_reif S d )))
 with EvalRel : Exp -> Env -> D -> Prop :=
   | eval_var : forall ρ n,
     ⟦ exp_var n ⟧ ρ ↘ (ρ n)
