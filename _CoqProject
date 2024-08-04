@@ -2,7 +2,7 @@
 ./systemt/_.v
 ./systemt/intensional/syntax.v
 ./systemt/intensional/semantic.v
-./systemt/intensional/partial_completeness.v
+./systemt/intensional/totality.v
 ./systemt/extensional/syntax.v
 ./systemt/extensional/semantic.v
 ./systemt/extensional/list.v

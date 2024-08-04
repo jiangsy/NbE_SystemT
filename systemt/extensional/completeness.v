@@ -182,9 +182,9 @@ Lemma sem_nat_trans : forall a1 a2 a3,
   a1 ≈ a3 ∈ 𝒩.
 Proof.
   intros. generalize dependent a3. induction H; intros; eauto.
-  - dependent destruction H0.
+  - inversion H0; subst. 
     eauto using SemTypNat.
-  - dependent destruction H0.
+  - inversion H0; subst. 
     eauto using SemTypNat, sem_bot_trans.
 Qed.
 
@@ -194,7 +194,7 @@ Fixpoint interp_typ (T : Typ) : SemTyp :=
   | S' → T' => (interp_typ S') ⇒ (interp_typ T')
   end.
 
-Notation "⟦ T ⟧T" := (interp_typ T).
+Notation "⟦ T ⟧T" := (interp_typ T) (at level 55, no associativity).
 
 Notation "a ≈ a' ∈ ⟦ T ⟧T" := ((interp_typ T) a a') 
   (at level 55, a' at next level, no associativity).
@@ -451,7 +451,7 @@ Proof.
   simpl. unfold SemArr. intros.
   assert ((ρ ↦ a) ≈ (ρ' ↦ a') ∈ ⟦ S :: Γ ⟧Γ). {
     unfold SemEqEnv in *. intros. destruct i; simpl in *; auto.
-    - dependent destruction H2. auto.
+    - inversion H2; subst. auto. 
   }
   apply H in H2. destruct H2 as [b [b']].
   exists b, b'; intuition.
@@ -618,7 +618,7 @@ Proof.
   destruct IH1 as [a [a']]. intuition.
   assert (ρ ↦ a ≈ ρ' ↦ a' ∈ ⟦ S :: Γ ⟧Γ ). {
     simpl. unfold SemEqEnv in *. intros. destruct i; simpl in *; eauto.
-    dependent destruction H4; eauto.
+    inversion H4; subst. eauto.
   }
   apply H in H4; eauto. destruct H4 as [b [b']].
   exists b, b'; intuition; eauto.
@@ -725,7 +725,7 @@ Proof.
   simpl. unfold SemArr. intros.
   assert ((τ ↦ a) ≈ (τ' ↦ a') ∈ ⟦ S :: Δ ⟧Γ). {
     simpl; unfold SemEqEnv; intros; destruct i; simpl in *; eauto.
-    dependent destruction H6; eauto.
+    inversion H6; subst. eauto.
   }
   apply H0 in H6. destruct H6 as [b [b']].
   exists b, b'; intuition; eauto.
@@ -778,7 +778,7 @@ Proof.
   destruct IH2 as [a [a']].
   exists (τ ↦ a), (τ' ↦ a'). intuition; simpl; eauto.
   unfold SemEqEnv in *. intros. destruct i; simpl in H6; eauto.
-  dependent destruction H6; auto.
+  inversion H6; subst; auto.
 Qed.
 
 Lemma sem_eq_subst_comp : forall Γ1 Γ2 Γ3 σ σ' τ τ',
@@ -816,7 +816,7 @@ Proof.
   intuition.
   exists (ρ2 ↦ a), (ρ2' ↦ a'). intuition; eauto.
   unfold SemEqEnv in *. intros. destruct i; simpl in *; eauto.
-  dependent destruction H10; eauto.
+  inversion H10; subst; eauto.
 Qed.
 
 Lemma sem_eq_subst_ext_shift : forall Γ Δ σ s S,
@@ -979,7 +979,7 @@ Proof.
   intros. induction Γ; simpl; auto.
   - unfold SemEqEnv. intros. destruct i; inversion H.
   - unfold SemEqEnv in *. intros. destruct i; simpl in *; auto.
-    dependent destruction H. 
+    inversion H.
     apply bot_subset_T. unfold SemTypBot. intros; intuition; eauto.
 Qed.
 
@@ -1006,4 +1006,7 @@ Proof.
   pose proof (init_env_is_sem_env Γ).
   eapply sem_eq_exp_completeness in H; eauto.
 Qed.
+ 
+ Print Assumptions nbe_completeness.
+
  

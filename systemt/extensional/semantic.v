@@ -118,27 +118,27 @@ Lemma app_eval_rec_subst_det :
   ( forall σ ρ ρ1', ⟦ σ ⟧s ρ ↘ ρ1' -> forall ρ2', ⟦ σ ⟧s ρ ↘ ρ2' -> ρ1' = ρ2' ).
 Proof.
   apply app_eval_rec_subst_mutind; intros; 
-    try solve [dependent destruction H; eauto; try apply f_equal; try apply f_equal2; eauto];
-    try solve [dependent destruction H0; eauto; try apply f_equal; try apply f_equal2; eauto].
-  - dependent destruction H2. 
-    apply H in H2_.
-    apply H0 in H2_0. subst.
-    apply H1 in H2; eauto.
-  - dependent destruction H3; eauto.
-    apply H in H3_.
-    apply H0 in H3_0. 
-    apply H1 in H3_1. subst.
+    try solve [inversion H; subst; eauto; try apply f_equal; try apply f_equal2; eauto];
+    try solve [inversion H0; subst; eauto; try apply f_equal; try apply f_equal2; eauto].
+  - inversion H2; subst.
+    apply H in H5.
+    apply H0 in H6. subst.
+    apply H1 in H9; eauto.
+  - inversion H3; subst; eauto.
+    apply H in H8.
+    apply H0 in H11. 
+    apply H1 in H12. subst.
     eauto.
-  - dependent destruction H1.
-    apply H in H1. subst.
-    apply H0 in H2; eauto.
-  - dependent destruction H2.
-    apply H0 in H3. subst.
-    apply H in H2. subst. eauto.
-  - dependent destruction H1.
-    apply H in H1_. subst. eauto.
-  - dependent destruction H1.
-    apply H in H1. subst. apply f_equal2; eauto.
+  - inversion H1; subst. 
+    apply H in H4. subst.
+    apply H0 in H7; eauto.
+  - inversion H2. subst.
+    apply H0 in H5. subst.
+    apply H in H4. subst. eauto.
+  - inversion H1. subst.
+    apply H in H4. subst. eauto.
+  - inversion H1. subst.
+    apply H in H4. subst. apply f_equal2; eauto.
 Qed.
 
 Theorem app_det : forall f a b1 b2, 
@@ -215,20 +215,20 @@ Lemma rne_rnf_det :
   ( forall n d v1, Rⁿᶠ ⦇ n ⦈ d ↘ v1 -> forall v2, Rⁿᶠ ⦇ n ⦈ d ↘ v2 -> v1 = v2 ).
 Proof.
   apply rne_rnf_mutind; intros; eauto.
-  - dependent destruction H; eauto.
-  - dependent destruction H1; eauto.
+  - inversion H; eauto.
+  - inversion H1; eauto.
     apply f_equal2; eauto.
-  - dependent destruction H2.
+  - inversion H2.
     apply f_equal3; eauto.
-  - dependent destruction H0.
+  - inversion H0. subst.
     eapply app_det in a; eauto. subst.
-    apply H in H1. subst. auto.
-  - dependent destruction H. auto.
-  - dependent destruction H0.
-    apply H in H0. 
+    apply H in H7. subst. auto.
+  - inversion H; auto. 
+  - inversion H0. subst.
+    apply H in H3. 
     apply f_equal; eauto.
-  - dependent destruction H0.
-    apply H in H0.
+  - inversion H0. subst.
+    apply H in H3.
     apply f_equal; auto.
 Qed.
 

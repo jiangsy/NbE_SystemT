@@ -78,12 +78,12 @@ Proof with eauto using SemTypNat, RNeRel, RNfRel.
       eapply H0. unfold SemTypBot. intros...
     }
     apply H in H4. destruct H4 as [b]. destruct H4 as [Hb Happ].
-    dependent destruction Happ.
+    inversion Happ; subst.
     + eapply H3 with (n:=S n) in Hb. 
       destruct Hb as [v]...
     + eapply H3 with (n:=n) in Hb.
-      destruct Hb as [v]. dependent destruction H4.
-      dependent destruction H4...
+      destruct Hb as [v]. inversion H4; subst.
+      inversion H7. subst...
 Qed.
 
 Corollary bot_subset_T : forall e T, 
@@ -142,7 +142,7 @@ Proof.
       simpl in H0. intuition.
       apply H in H2. destruct H2 as [b [Heval Htyp]].
       exists b; split; eauto.
-      dependent destruction Heval. unfold drop. eauto.
+      inversion Heval; subst. unfold drop. eauto.
 Qed.
 
 Lemma sem_typing_abs : forall Γ t S T,
@@ -382,7 +382,7 @@ Proof.
   intro Γ. induction Γ; intros.
   - destruct i; simpl in H; inversion H.
   - destruct i; simpl in H.
-    + dependent destruction H. simpl in H0.
+    + inversion H; subst. simpl in H0.
       exists (ρ 0); simpl in *; intuition.
     + simpl in H0. intuition. eapply IHΓ in H; eauto.
       destruct H as [a' [Hlookup Htyp]].
@@ -458,7 +458,7 @@ Proof.
     + unfold drop. simpl. auto.
 Qed.
 
-Corollary nbe_partial_completeness : forall Γ t T,
+Corollary nbe_totality : forall Γ t T,
   Γ ⊢ t : T ->
   exists w, nbe Γ t w.
 Proof.
