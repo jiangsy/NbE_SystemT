@@ -1,12 +1,17 @@
 -R . nbe
-./systemt/_.v
+
+./common/list.v
+
 ./systemt/intensional/syntax.v
 ./systemt/intensional/semantic.v
 ./systemt/intensional/totality.v
 ./systemt/extensional/syntax.v
 ./systemt/extensional/semantic.v
-./systemt/extensional/list.v
 ./systemt/extensional/nbe.v
 ./systemt/extensional/completeness.v
 ./systemt/extensional/soundness.v
+./systemt/_.v
+
+./ptt/syntax/def.v
+./ptt/syntax/rule.v
 

@@ -3,8 +3,8 @@ Require Import Coq.Lists.List.
 Require Import Lia.
 Require Import Setoid Morphisms.
 
+Require Import nbe.common.list.
 Require Import nbe.systemt.extensional.nbe.
-Require Import nbe.systemt.extensional.list.
 Require Import nbe.systemt.extensional.syntax.
 Require Import nbe.systemt.extensional.semantic.
 Require Import nbe.systemt.extensional.completeness.

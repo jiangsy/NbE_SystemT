@@ -1,3 +1,5 @@
+Require nbe.common.list.
+
 Require nbe.systemt.intensional.totality.
 Require nbe.systemt.extensional.soundness.
 Require nbe.systemt.extensional.completeness.
