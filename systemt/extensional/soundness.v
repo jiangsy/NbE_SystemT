@@ -527,8 +527,6 @@ Proof.
       eapply exp_eq_comp_subst; eauto.
 Qed.
 
-
-
 Lemma logical_rel_app : forall Γ r s S T,
   Γ ⫢ r : S → T ->
   Γ ⫢ s : S ->

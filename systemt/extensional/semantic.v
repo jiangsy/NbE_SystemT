@@ -16,12 +16,6 @@ with Dnf : Set :=
 Notation " ( 'ƛ' t ) ρ " := (d_abs t ρ)
   (at level 55).
 
-(* Notation "🠑 T e" := (d_refl T e) 
-  (at level 9, T at level 9, no associativity).
-
-Notation " ↓ T d" := (dnf_reif T d) 
-  (at level 9, T at level 9, no associativity). *)
-
 Definition Env := nat -> D.
 
 Definition add (ρ : Env) (d : D) : Env :=
@@ -96,7 +90,7 @@ with SubstRel : Subst -> Env -> Env -> Prop :=
     ⟦ σ1 ∘ σ2 ⟧s ρ ↘ ρ''
   | psusbt_ext : forall ρ ρ' σ t a,
     ⟦ σ ⟧s ρ ↘ ρ' ->
-    ⟦ t ⟧ ρ ↘ a -> (* why not ρ', but ρ *)
+    ⟦ t ⟧ ρ ↘ a -> 
     ⟦ es_ext σ t ⟧s ρ ↘ (ρ' ↦ a)
 where "f ∙ a ↘ b" := (AppRel f a b) and 
       "⟦ t ⟧ ρ ↘ a" := (EvalRel t ρ a) and 
@@ -247,4 +241,3 @@ Corollary rnf_det : forall n d v1 v2,
 Proof.
   specialize rne_rnf_det. intuition. eauto.
 Qed.
-

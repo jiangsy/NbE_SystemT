@@ -144,7 +144,7 @@ Inductive ExpEq : Ctx -> Exp -> Exp -> Typ -> Prop :=
     Γ1 ⊢s τ : Γ2 ->
     Γ2 ⊢s σ : Γ3 ->
     Γ3 ⊢ t : T ->
-    Γ1 ⊢ exp_subst (exp_subst t σ) τ ≈ exp_subst t (σ ∘ τ) : T (* typo in p.p 28 *)
+    Γ1 ⊢ exp_subst (exp_subst t σ) τ ≈ exp_subst t (σ ∘ τ) : T
 | exp_eq_prop_zero : forall Γ σ Δ,
     Γ ⊢s σ : Δ ->
     Γ ⊢ exp_subst exp_zero σ ≈ exp_zero : ℕ
@@ -227,7 +227,7 @@ with SubstEq : Ctx -> Subst -> Subst -> Ctx -> Prop :=
     Γ ⊢s σ ≈ σ' : Δ ->
     Γ ⊢ s ≈ s' : S ->
     Γ ⊢s es_ext σ s ≈ es_ext σ' s' : (S :: Δ)
-| subst_eq_compat_comp : forall Γ1 Γ2 Γ3 σ σ' τ τ', (* typo in p.p 29 ? *)
+| subst_eq_compat_comp : forall Γ1 Γ2 Γ3 σ σ' τ τ',
     Γ1 ⊢s τ ≈ τ' : Γ2 ->
     Γ2 ⊢s σ ≈ σ' : Γ3 ->
     Γ1 ⊢s σ ∘ τ ≈ σ' ∘ τ' : Γ3 
@@ -275,7 +275,6 @@ Proof with eauto using Typing, SubstTyping.
   - econstructor.
     eapply typing_subst with (Δ := S :: Δ)...
 Qed.
-
 
 Corollary syn_exp_eq_typing : forall Γ t t' T,
   Γ ⊢ t ≈ t' : T -> Γ ⊢ t : T /\ Γ ⊢ t' : T.

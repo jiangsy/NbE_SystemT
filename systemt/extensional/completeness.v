@@ -1006,7 +1006,3 @@ Proof.
   pose proof (init_env_is_sem_env Γ).
   eapply sem_eq_exp_completeness in H; eauto.
 Qed.
- 
- Print Assumptions nbe_completeness.
-
- 
