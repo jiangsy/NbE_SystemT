@@ -177,9 +177,9 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
 | eq_exp_subst_id : forall Γ t T,
   Γ ⊢ t : T ->
   Γ ⊢ t [ subst_id ] ≈ t : T
-| eq_exp_substs_shift : forall Γ t S T,
+| eq_exp_substs_shift : forall Γ S T i,
   InCtx i T Γ ->
-  ⊢ S :: Γ ->
+  ⊢ (S :: Γ) ->
   (S :: Γ) ⊢ exp_var i [ ↑ ] ≈ exp_var (1 + i) : T [ ↑ ]
 | eq_exp_subst_comp : forall Γ1 Γ2 Γ3 σ1 σ2 t T,
   Γ1 ⊢s σ1 : Γ2 ->
