@@ -2,7 +2,7 @@ Require Import Coq.Lists.List.
 
 Inductive Subst : Set :=
 | subst_shift 
-| susbt_id 
+| subst_id 
 | subst_comp (σ1 σ2 : Subst)
 | subst_ext (σ : Subst) (e : Exp) 
 with Exp : Set :=
@@ -15,7 +15,7 @@ with Exp : Set :=
 | exp_subst (e : Exp) (σ : Subst)
 | exp_nat
 | exp_set (k : nat)
-| exp_fun (S T : Exp).
+| exp_pi (S T : Exp).
 
 Definition Ctx := list Exp.
 
@@ -35,7 +35,7 @@ Notation "r ▫ s" := (exp_app r s)
 Notation "σ1 ∘ σ2" := (subst_comp σ1 σ2) 
   (at level 49, right associativity): type_scope.
 
-Notation "S → T" := (exp_fun S (exp_abs (exp_subst T subst_shift)))
+Notation "S → T" := (exp_pi S (exp_abs (exp_subst T subst_shift)))
   (at level 55, right associativity).
 
 Inductive Nf : Set :=
@@ -44,7 +44,7 @@ Inductive Nf : Set :=
 | nf_suc (v : Nf)
 | nf_abs (v : Nf)
 | nf_nat
-| nf_fun (V W : Nf)
+| nf_pi (V W : Nf)
 | nf_set (k : nat)
 with Ne : Set :=
 | ne_var (i : nat)
@@ -58,7 +58,7 @@ Fixpoint nf_to_exp (v : Nf) : Exp :=
   | nf_suc v => exp_suc (nf_to_exp v)
   | nf_abs v => exp_abs (nf_to_exp v)
   | nf_nat => exp_nat
-  | nf_fun V W => exp_fun (nf_to_exp V) (nf_to_exp W)
+  | nf_pi V W => exp_pi (nf_to_exp V) (nf_to_exp W)
   | nf_set k => exp_set k
   end
 with ne_to_exp (u : Ne) : Exp :=
