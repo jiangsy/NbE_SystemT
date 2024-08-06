@@ -1,7 +1,6 @@
 Require Import Coq.Program.Equality.
 Require Import Coq.Lists.List.
 Require Import Lia.
-Require Import Setoid Morphisms.
 
 Require Import nbe.common.list.
 Require Import nbe.systemt.extensional.nbe.
@@ -122,13 +121,6 @@ Proof.
               simpl. auto.
 Qed.
 
-Lemma list_concat_assoc : forall {A : Set} (Γ1 Γ2 Γ3 : list A),
-  Γ1 ++ Γ2 ++ Γ3 = (Γ1 ++ Γ2) ++ Γ3.
-Proof.
-  intros. induction Γ1; auto.
-  simpl. rewrite IHΓ1; auto.
-Qed.
-
 Lemma sem_subst_eq_subst_from_weaken_comp : forall Γ Δ1 Δ2,
   (Δ1 ++ Δ2 ++ Γ) ⊨s subst_from_weaken Δ2 ∘ subst_from_weaken Δ1 ≈ subst_from_weaken (Δ1 ++ Δ2) : Γ.
 Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken.
@@ -170,14 +162,14 @@ Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_
     apply H5 in H. unfold KripkeCandidateSpaceUpper in H. intuition.
     specialize (H8 Δ0). destruct H8 as [w].
     exists (ne_app u w). intuition. econstructor; eauto.
-    rewrite list_concat_assoc; auto.
+    simpl_alist in *. auto.
     eapply exp_eq_trans with (t2:=(t [subst_from_weaken Δ] [subst_from_weaken Δ0]) ▫ (s [subst_from_weaken Δ0]))...
     eapply exp_eq_comp_app; eauto. fold ne_to_exp.
     eapply exp_eq_trans with (t2:=t [subst_from_weaken Δ ∘ subst_from_weaken Δ0])...
     eapply exp_eq_trans with (t2:=t [subst_from_weaken (Δ0 ++ Δ)]); eauto.
     eapply exp_eq_comp_subst...
     eapply syn_subst_eq_subst_from_weaken_comp.
-    rewrite list_concat_assoc. auto.
+    simpl_alist in *; auto.
   - simpl in *. 
     unfold KripkeArrSpace in H. intuition.
     unfold KripkeCandidateSpaceUpper. intuition.
@@ -322,12 +314,6 @@ Ltac destruct_es_id :=
     | H : ?Γ ⊢s ?σ ∘ es_id : ?Δ |- _ => inversion H; subst; clear H
     end.
 
-Ltac destruct_es_id' := 
-    match goal with 
-    | H : ?Γ ⊢ ?t [ es_id ] : ?T |- _ => inversion H; subst; clear H
-    | H : ?Γ ⊢s es_id : ?Δ |- _ => inversion H; subst; clear H
-    end.
-
 Lemma exp_logical_rel_typing : forall Γ t T,
   Γ ⫢ t : T -> 
   Γ ⊢ t : T.
@@ -388,10 +374,6 @@ Proof.
   inversion H0. subst.
   eapply exp_eq_prop_suc; eauto.
 Qed.
-
-(* Declare Instance Equivalence_eq (Γ : Ctx) (T : Typ) : Equivalence ((fun Γ T t t' => ExpEq Γ t t' T) Γ T).
-Declare Instance Proper_Typing (Γ : Ctx) (T : Typ) : Proper (eq) ((fun Γ T t => Typing Γ t T) Γ T).
-Declare Instance Proper_ExpLogicalRel (Γ : Ctx) (T : Typ) (a : D): Proper (eq) (fun t => (interp_typ T) Γ t a). *)
 
 Lemma logical_rel_abs : forall Γ t S T,
   (S :: Γ) ⫢ t : T ->
