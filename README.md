@@ -8,5 +8,7 @@ This repo formalizes the normalization of evaluation of System T (STLC + Nat + R
 make -f CoqMakefile
 ```
 
-The proofs of System T is in `./systemt/`. `./ptt/` contains unfinished work for a extending System T to dependent type systems. Since it requires induction-recursion which is not currently supported by Coq, it may remain unfinished for a long time (there is a workaround to rely on the impredicativity of Prop in Coq, as shown in A "Coq Formalization of Normalization by Evaluation for Martin-Löf Type Theory")
+The proof of System T is in `./systemt/`. 
+
+`./ptt/` contains unfinished work for a extending System T to a dependently typed system. Since its formalization requires induction-recursion which is not currently supported by Coq, it may remain unfinished for a long time (there is a workaround to rely on the impredicativity of `Prop` in Coq, as shown in A "Coq Formalization of Normalization by Evaluation for Martin-Löf Type Theory")
 

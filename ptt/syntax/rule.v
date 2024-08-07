@@ -6,8 +6,13 @@ Require Import nbe.ptt.syntax.def.
 Definition subst0 : Exp -> Exp -> Exp :=
   fun t s => t [ subst_ext subst_id s ].
 
+Notation "t [| s ]" := (subst0 t s)
+  (at level 54, left associativity).
+
 Reserved Notation "⊢ Γ"
-  (at level 55, no associativity).
+  (at level 55, Γ at next level, no associativity).
+Reserved Notation "⊢ Γ ≈ Γ'"
+  (at level 55, Γ at next level, no associativity).
 Reserved Notation "Γ ⊢ t : T"
   (at level 55, t at next level, no associativity).
 Reserved Notation "Γ ⊢s σ : Δ"
@@ -22,6 +27,15 @@ Inductive WfCtx : Ctx -> Prop :=
   ⊢ Γ ->
   Γ ⊢ T : (exp_set i) ->
   ⊢ (T :: Γ)
+with EqCtx : Ctx -> Ctx -> Prop :=
+| eq_ctx_nil : ⊢ nil ≈ nil
+| eq_ctx_cons : forall Γ Γ' T T' i,
+  ⊢ Γ ≈ Γ' ->
+  Γ ⊢ T : exp_set i ->
+  Γ' ⊢ T' : exp_set i ->
+  Γ ⊢ T ≈ T' : exp_set i ->
+  Γ ⊢ T ≈ T' : exp_set i ->
+  ⊢ (T :: Γ) ≈ (T' :: Γ')
 with Typing : Ctx -> Exp -> Exp -> Prop :=
 | typing_nat : forall Γ i,
   ⊢ Γ ->
@@ -112,7 +126,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
 | eq_exp_prop_rec : forall Γ Δ σ tz ts tn T i,
   Γ ⊢s σ : Δ ->
   (ℕ :: Δ) ⊢ T : exp_set i ->
-  Δ ⊢ tz : subst0 T exp_zero ->
+  Δ ⊢ tz : T [| exp_zero ] ->
   (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext ( ↑ ∘ ↑ ) (exp_var 1) ] ->
   Δ ⊢ tn : ℕ ->
   Γ ⊢ exp_rec T tz ts tn [ σ ] ≈ exp_rec T tz ts tn [ σ ] : T
@@ -156,15 +170,15 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   (S :: Γ) ⊢ T : exp_set i ->
   (S :: Γ) ⊢ t : T ->
   Γ ⊢ s : S ->
-  Γ ⊢ (λ t) ▫ s ≈ subst0 t s : subst0 T s 
+  Γ ⊢ (λ t) ▫ s ≈ t [| s ] : T [| s ] 
 | eq_exp_beta_rec_zero : forall Γ tz ts T i,
   (ℕ :: Γ) ⊢ T : exp_set i ->
   (* why dont check ts? *)
-  Γ ⊢ tz : subst0 T exp_zero ->
-  Γ ⊢ exp_rec T tz ts exp_zero ≈ tz : subst0 T exp_zero
+  Γ ⊢ tz : T [| exp_zero ] ->
+  Γ ⊢ exp_rec T tz ts exp_zero ≈ tz : T [| exp_zero ]
 | eq_exp_beta_rec_suc : forall Γ tz ts tn T i,
   (ℕ :: Γ) ⊢ T : exp_set i ->
-  Γ ⊢ tz : subst0 T exp_zero ->
+  Γ ⊢ tz : T [| exp_zero ] ->
   (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
   Γ ⊢ tn : ℕ ->
   (* Γ ⊢ exp_rec T tz ts (exp_suc tn) ≈ ts [ subst_ext (subst_ext subst_id tn) (exp_rec T tz ts tn) ] : subst0 T (exp_suc tn) *)
@@ -212,7 +226,54 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ t2 ≈ t3 : T ->
   Γ ⊢ t1 ≈ t3 : T
 with EqSubst : Ctx -> Subst -> Subst -> Ctx -> Prop :=
+| eq_subst_comp_id : forall Γ,
+  Γ ⊢s subst_id ≈ subst_id : Γ
+| eq_subst_comp_shift : forall T Γ,
+  (T :: Γ) ⊢s ↑ ≈ ↑ : Γ
+| eq_subst_comp_comp : forall Γ1 Γ2 Γ3 σ1 σ1' σ2 σ2',
+  Γ1 ⊢s σ1 ≈ σ1' : Γ2 ->
+  Γ2 ⊢s σ2 ≈ σ2' : Γ3 ->
+  Γ1 ⊢s (σ2 ∘ σ1) ≈ (σ2' ∘ σ1') : Γ1
+| eq_subst_comp_ext : forall Γ Δ σ σ' t t' T i,
+  Γ ⊢s σ ≈ σ' : Δ ->
+  Δ ⊢ T : exp_set i ->
+  Γ ⊢ t ≈ t' : T [ σ ] ->
+  Γ ⊢s subst_ext σ t ≈ subst_ext σ' t' : (T :: Δ)
+| eq_subst_id_l : forall Γ Δ σ,
+  Γ ⊢s σ : Δ ->
+  Γ ⊢s subst_id ∘ σ ≈ σ : Δ
+| eq_subst_id_r : forall Γ Δ σ,
+  Γ ⊢s σ : Δ ->
+  Γ ⊢s σ ∘ subst_id ≈ σ : Δ
+| eq_subst_assoc : forall Γ1 Γ2 Γ3 Γ4 σ1 σ2 σ3,
+  Γ1 ⊢s σ1 : Γ2 ->
+  Γ2 ⊢s σ2 : Γ3 ->
+  Γ3 ⊢s σ3 : Γ4 ->
+  Γ1 ⊢s (σ3 ∘ σ2) ∘ σ1 ≈ σ3 ∘ (σ2 ∘ σ1) : Γ4
+| eq_subst_prop_ext : forall Γ1 Γ2 Γ3 σ τ t T i,
+  Γ1 ⊢s τ : Γ2 ->
+  Γ2 ⊢s σ : Γ3 ->
+  Γ3 ⊢ T : exp_set i ->
+  Γ2 ⊢ t : T [ σ ] ->
+  Γ1 ⊢s subst_ext σ t ∘ τ ≈ subst_ext (σ ∘ τ) (t [ τ ]) : (T :: Γ3) 
+| eq_subst_prop_shift : forall Γ Δ σ t T i,
+  Γ ⊢s σ : Δ ->
+  Δ ⊢ T : exp_set i ->
+  Γ ⊢ t : T [ σ ] ->
+  Γ ⊢s ↑ ∘ (subst_ext σ t) ≈ σ : Δ
+| eq_subst_sym : forall Γ Δ σ σ',
+  Γ ⊢s σ ≈ σ' : Δ ->
+  Γ ⊢s σ' ≈ σ : Δ
+| eq_subst_trans : forall Γ Δ σ1 σ2 σ3,
+  Γ ⊢s σ1 ≈ σ2 : Δ ->
+  Γ ⊢s σ2 ≈ σ3 : Δ ->
+  Γ ⊢s σ1 ≈ σ3 : Δ
+| eq_subst_conv : forall Γ Δ Δ' σ σ',
+  Γ ⊢s σ ≈ σ' : Δ ->
+  ⊢ Δ ≈ Δ' ->
+  Γ ⊢s σ ≈ σ' : Δ'
 where "⊢ Γ" := (WfCtx Γ) and
+      "⊢ Γ ≈ Γ'" := (EqCtx Γ Γ') and 
       "Γ ⊢ t : T" := (Typing Γ t T) and 
       "Γ ⊢s σ : Δ" := (SubstTyping Γ σ Δ) and 
       "Γ ⊢ t ≈ t' : T" := (EqExp Γ t t' T) and 
