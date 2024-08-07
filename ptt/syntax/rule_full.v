@@ -24,13 +24,17 @@ Reserved Notation  "Γ ⊢s σ ≈ σ' : Δ"
 Inductive WfCtx : Ctx -> Prop :=
 | wf_ctx_nil : ⊢ nil
 | wf_ctx_cons : forall Γ T i,
+  ⊢ Γ ->
   Γ ⊢ T : (𝕊 i) ->
   ⊢ (T :: Γ)
 with EqCtx : Ctx -> Ctx -> Prop :=
 | eq_ctx_nil : ⊢ nil ≈ nil
 | eq_ctx_cons : forall Γ Γ' T T' i,
   ⊢ Γ ≈ Γ' ->
+  Γ ⊢ T : 𝕊 i ->
+  Γ' ⊢ T' : 𝕊 i ->
   Γ ⊢ T ≈ T' : 𝕊 i ->
+  Γ' ⊢ T ≈ T' : 𝕊 i ->
   ⊢ (T :: Γ) ≈ (T' :: Γ')
 with Typing : Ctx -> Exp -> Exp -> Prop :=
 | typing_nat : forall Γ i,
@@ -40,6 +44,7 @@ with Typing : Ctx -> Exp -> Exp -> Prop :=
   ⊢ Γ ->
   Γ ⊢ (𝕊 i) : (exp_set (1 + i))
 | typing_pi : forall Γ S T i,
+  Γ ⊢ S : 𝕊 i ->
   (S :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ exp_pi S T : 𝕊 i
 | typing_var : forall Γ n T,
@@ -55,10 +60,13 @@ with Typing : Ctx -> Exp -> Exp -> Prop :=
   Γ ⊢ tz : T [| exp_zero ] ->
   (T :: ℕ :: Γ) ⊢ ts : ( T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ) ->
   Γ ⊢ exp_rec T tz ts tn : T [| tn ]
-| typing_abs : forall Γ t S T,
+| typing_abs : forall Γ t S T i,
+  Γ ⊢ S : 𝕊 i ->
   (S :: Γ) ⊢ t : T ->
   Γ ⊢ (exp_abs t) : (exp_pi S T) 
-| typing_app : forall Γ r s S T,
+| typing_app : forall Γ r s S T i,
+  Γ ⊢ S : 𝕊 i ->
+  (S :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ r : exp_pi S T ->
   Γ ⊢ s : S ->
   Γ ⊢ r ▫ s : T [| s ]
@@ -100,6 +108,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ 𝕊 i [ σ ] ≈ 𝕊 i : exp_set (1 + i)
 | eq_exp_prop_pi : forall Γ Δ σ S T i,
   Γ ⊢s σ : Δ ->
+  Γ ⊢ S : 𝕊 i ->
   (S :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ exp_pi S T [ σ ] ≈ exp_pi (S [ σ ]) (T [subst_ext (σ ∘ ↑) (exp_var 0)]) : 𝕊 i
 | eq_exp_prop_zero : forall Γ Δ σ,
@@ -125,6 +134,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢s σ : Δ ->
   Γ ⊢ (λ t) [ σ ] ≈ (λ (t [subst_ext (σ ∘ subst_shift) (exp_var 0)])) : (exp_pi S T) [ σ ]
 | eq_exp_comp_pi : forall Γ S S' T T' i, 
+  Γ ⊢ S : 𝕊 i ->
   Γ ⊢ S ≈ S' : 𝕊 i ->
   (S :: Γ) ⊢ T ≈ T' : 𝕊 i ->
   Γ ⊢ exp_pi S T ≈ exp_pi S' T' : 𝕊 i
@@ -134,24 +144,30 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
 | eq_exp_comp_suc : forall Γ t t',
   Γ ⊢ t ≈ t' : ℕ ->
   Γ ⊢ exp_suc t ≈ exp_suc t' : ℕ
-| eq_exp_comp_app : forall Γ r r' s s' S T,
+| eq_exp_comp_app : forall Γ r r' s s' S T i,
+  Γ ⊢ S : 𝕊 i ->
+  (S :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ r ≈ r' : exp_pi S T ->
   Γ ⊢ s ≈ s' : S ->
   Γ ⊢ r ▫ s ≈ r' ▫ s' : T [| s ]
 | eq_exp_comp_rec : forall Γ tz tz' ts ts' tn tn' T T' i,
+  (ℕ :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ tz ≈ tz' : T [| exp_zero ] ->
   (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
   Γ ⊢ tn ≈ tn' : ℕ ->
   (ℕ :: Γ) ⊢ T ≈ T' : 𝕊 i ->
   Γ ⊢ exp_rec T tz ts tn ≈ exp_rec T' tz' ts' tn' : T
-| eq_exp_comp_abs : forall Γ t t' S T,
+| eq_exp_comp_abs : forall Γ t t' S T i,
+  Γ ⊢ S : 𝕊 i ->
   (S :: Γ) ⊢ t ≈ t' : T ->
   Γ ⊢ (λ t) ≈ (λ t') : exp_pi S T
 | eq_exp_comp_subst : forall Γ Δ t t' σ σ' T,
   Γ ⊢s σ ≈ σ' : Δ ->
   Δ ⊢ t ≈ t' : T ->
   Γ ⊢ t [ σ ] ≈ t' [ σ' ] : T
-| eq_exp_beta_abs : forall Γ t s S T,
+| eq_exp_beta_abs : forall Γ t s S T i,
+  Γ ⊢ S : 𝕊 i ->
+  (S :: Γ) ⊢ T : 𝕊 i ->
   (S :: Γ) ⊢ t : T ->
   Γ ⊢ s : S ->
   Γ ⊢ (λ t) ▫ s ≈ t [| s ] : T [| s ] 
@@ -167,7 +183,9 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ tn : ℕ ->
   (* Γ ⊢ exp_rec T tz ts (exp_suc tn) ≈ ts [ subst_ext (subst_ext subst_id tn) (exp_rec T tz ts tn) ] : subst0 T (exp_suc tn) *)
   Γ ⊢ exp_rec T tz ts (exp_suc tn) ≈ ts ▫ tn ▫ exp_rec T tz ts tn : T [| exp_suc tn ]
-| eq_exp_eta_abs : forall Γ t S T,
+| eq_exp_eta_abs : forall Γ t S T i,
+  Γ ⊢ S : 𝕊 i ->
+  (S :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ t : exp_pi S T ->
   Γ ⊢ t ≈ exp_abs (t [ ↑ ] ▫ (exp_var 0)) : exp_pi S T
 | eq_exp_subst_id : forall Γ t T,

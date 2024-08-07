@@ -79,3 +79,6 @@ Inductive InCtx : nat -> Exp -> Ctx -> Prop :=
 | in_there : forall n S T Γ,
   InCtx n T Γ ->
   InCtx (1 + n) (T [ ↑ ]) (S :: Γ).
+
+Notation " n : T ∈ Γ " := (InCtx n T Γ)
+  (at level 55, T at next level, no associativity).
