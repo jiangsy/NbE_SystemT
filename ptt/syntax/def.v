@@ -21,6 +21,8 @@ Definition Ctx := list Exp.
 
 Notation "'ℕ'" := exp_nat.
 
+Notation "'𝕊'" := exp_set.
+
 Notation "↑" := subst_shift.
 
 Notation "'λ' t" := (exp_abs t)
