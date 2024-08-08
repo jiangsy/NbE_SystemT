@@ -52,6 +52,7 @@ with Typing : Ctx -> Exp -> Exp -> Prop :=
   n : T ∈ Γ ->
   Γ ⊢ (exp_var n) : T
 | typing_zero : forall Γ,
+  ⊢ Γ ->
   Γ ⊢ exp_zero : exp_nat
 | typing_suc : forall Γ t,
   Γ ⊢ t : exp_nat ->
@@ -111,8 +112,8 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ 𝕊 i [ σ ] ≈ 𝕊 i : exp_set (1 + i)
 | eq_exp_prop_pi : forall Γ Δ σ S T i,
   Γ ⊢s σ : Δ ->
-  Γ ⊢ S : 𝕊 i ->
-  (S :: Γ) ⊢ T : 𝕊 i ->
+  Δ ⊢ S : 𝕊 i ->
+  (S :: Δ) ⊢ T : 𝕊 i ->
   Γ ⊢ exp_pi S T [ σ ] ≈ exp_pi (S [ σ ]) (T [subst_ext (σ ∘ ↑) (exp_var 0)]) : 𝕊 i
 | eq_exp_prop_zero : forall Γ Δ σ,
   Γ ⊢s σ : Δ ->
@@ -132,10 +133,11 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Δ ⊢ tz : T [| exp_zero ] ->
   (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext ( ↑ ∘ ↑ ) (exp_var 1) ] ->
   Δ ⊢ tn : ℕ ->
-  Γ ⊢ exp_rec T tz ts tn [ σ ] ≈ exp_rec T tz ts tn [ σ ] : T
+  Γ ⊢ exp_rec T tz ts tn [ σ ] ≈ exp_rec (T [q σ]) (tz [σ]) (ts [q (q σ)]) (tn [ σ ]) : T [ subst_ext σ (tn [ σ ]) ]
 | eq_exp_prop_abs : forall Γ Δ σ t S T,
   Γ ⊢s σ : Δ ->
-  Γ ⊢ (λ t) [ σ ] ≈ (λ (t [subst_ext (σ ∘ subst_shift) (exp_var 0)])) : (exp_pi S T) [ σ ]
+  (S :: Δ) ⊢ t : T ->
+  Γ ⊢ (λ t) [ σ ] ≈ (λ (t [q σ])) : (exp_pi S T) [ σ ]
 | eq_exp_comp_pi : forall Γ S S' T T' i, 
   Γ ⊢ S : 𝕊 i ->
   Γ ⊢ S ≈ S' : 𝕊 i ->
@@ -294,10 +296,22 @@ Scheme wf_ctx_ind := Induction for WfCtx Sort Prop
 
 Combined Scheme wf_ctx_eq_ctx_typing_subst_typing_eq_exp_eq_subst_mutind from wf_ctx_ind, eq_ctx_ind, typing_ind, subst_typing_ind, eq_exp_ind, eq_subst_ind.
 
-Hint Constructors WfCtx EqCtx Typing SubstTyping EqExp EqSubst : core.
+Hint Constructors InCtx WfCtx EqCtx Typing SubstTyping EqExp EqSubst : core.
 Hint Constructors nat : core.
 
-Lemma wf : 
+Lemma wf_typ_in_wf_ctx : forall Γ T n,
+  ⊢ Γ ->
+  n : T ∈ Γ ->
+  exists i, Γ ⊢ T : exp_set i.
+Proof.
+  intros. induction H0; eauto.
+  - inversion H; subst. exists i. econstructor; eauto.
+  - inversion H; subst. apply IHInCtx in H3.
+    destruct H3 as [i1].
+    exists i1; eauto. eapply typing_conv with (T := (𝕊 i1) [ ↑ ]); eauto.
+Qed.
+
+Lemma presupposition : 
   (forall Γ, ⊢ Γ -> ⊢ Γ ) /\ 
   (forall Γ Δ, ⊢ Γ ≈ Δ -> ⊢ Γ /\ ⊢ Δ) /\
   (forall Γ t T, Γ ⊢ t : T -> ⊢ Γ /\ exists i, Γ ⊢ T : exp_set i) /\
@@ -306,31 +320,70 @@ Lemma wf :
   (forall Γ σ σ' Δ, Γ ⊢s σ ≈ σ' : Δ -> ⊢ Γ /\ Γ ⊢s σ : Δ /\ Γ ⊢s σ' : Δ /\ ⊢ Δ).
 Proof.
   apply wf_ctx_eq_ctx_typing_subst_typing_eq_exp_eq_subst_mutind; intros; try solve [ intuition; eauto ].
+  - intuition.
+    eapply wf_typ_in_wf_ctx; eauto.
   - admit.
-  - admit.
   - intuition. admit.
-  - admit.
-  - intuition. admit.
-  - intuition. admit.
-  - inversion H; subst; auto. 
-  - intuition. admit. admit.
+  - intuition. exists i.
+    unfold subst0. 
+    eapply typing_conv with (T := exp_subst (𝕊 i) (subst_ext subst_id s)) (i := (1+i)).
+    repeat (econstructor; eauto). econstructor. econstructor; eauto.
+  - intuition. destruct H3 as [i]. eauto. 
+  - inversion H; subst; eauto. 
+  - intuition. 
+    + admit.
+    + eapply typing_pi; eauto.
+      eapply typing_conv with (T:=𝕊 i [subst_ext (σ ∘ ↑) (exp_var 0)]) (i := 1 + i); eauto.
+      econstructor; eauto.
+      * econstructor; eauto. econstructor; eauto. econstructor; eauto.
+        econstructor; eauto. admit.
+      * eapply eq_exp_prop_set with (Δ := S :: Δ); eauto.
+        destruct H4 as [i1].
+        eapply subst_typing_ext with (i := i).
+        eapply subst_typing_comp with (Γ2:=Γ); eauto.
+        eapply subst_typing_shift. eapply wf_ctx_cons with (i:=i); eauto. auto.
+        eapply typing_conv with (T := S [ σ ] [ ↑ ]) (i := i); eauto.
+        econstructor; eauto.
+        eapply eq_exp_conv with (T := 𝕊 i [σ ∘ ↑]) (i := 1 + i); eauto.
+        eapply eq_exp_sym. eapply eq_exp_subst_comp; eauto. econstructor; eauto. 
+        eapply eq_exp_prop_set; eauto. econstructor; eauto. econstructor; eauto.
+    + eauto. 
   - intuition. admit. admit. admit.
   - intuition. admit. admit. admit.
   - intuition. admit. admit. admit.
-  - intuition. admit.
-  - intuition. admit. 
+  - intuition. 
+    econstructor; eauto. 
+    admit. (* EquivCtx *)
+  - intuition.
+    eapply wf_typ_in_wf_ctx; eauto.
   - intuition. admit. admit. admit.
   - intuition. admit. admit. admit.
   - intuition. admit. admit. admit.
   - intuition. admit. admit. admit.
   - intuition. admit. admit. admit.
   - intuition. admit. admit. admit.
-  - intuition. admit. 
+  - intuition.
+    econstructor; eauto. admit.
   - intuition. destruct H1 as [i]. eauto.
-  - intuition. admit. admit. admit.
-  - intuition. admit. admit. admit.
+  - intuition. inversion H; subst; eauto.
+    inversion H; subst; auto.
+    apply wf_typ_in_wf_ctx in i; eauto.
+    destruct i as [i1]. exists i1. econstructor; eauto.
+  - intuition; destruct H5 as [i].
+    econstructor; eauto.
+    econstructor; eauto. admit.
+    exists i. econstructor; eauto.
+  - intuition. 
+    destruct H5 as [i1].
+    eapply typing_conv with (T:=S [ ↑ ] [subst_ext σ s]) (i:=i1).
+    econstructor; eauto. econstructor; eauto. econstructor; eauto.
+    eapply eq_exp_trans with (t2:=S [↑ ∘ (subst_ext σ s)]); eauto.
+    apply eq_exp_sym. admit. 
+    eapply eq_exp_comp_subst; eauto. admit. 
   - intuition. admit.
-  - intuition. admit. admit. admit.
+    econstructor; eauto.
+    apply wf_typ_in_wf_ctx in i0; eauto. destruct i0 as [i1].
+    exists i1. eauto.
   - intuition. inversion H; subst; eauto. 
   - intuition. admit. admit.
   Unshelve. all : eauto. 
