@@ -43,6 +43,7 @@ with Typing : Ctx -> Exp -> Exp -> Prop :=
   (S :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ exp_pi S T : 𝕊 i
 | typing_var : forall Γ n T,
+  ⊢ Γ ->
   n : T ∈ Γ ->
   Γ ⊢ (exp_var n) : T
 | typing_zero : forall Γ,
@@ -64,7 +65,7 @@ with Typing : Ctx -> Exp -> Exp -> Prop :=
   Γ ⊢ r ▫ s : T [| s ]
 | typing_subst : forall Γ Δ σ t T,
   Γ ⊢s σ : Δ ->
-  Γ ⊢ t : T ->
+  Δ ⊢ t : T ->
   Γ ⊢ t [ σ ] : T [ σ ]
 | typing_cumu : forall Γ T i,
   Γ ⊢ T : 𝕊 i ->
@@ -75,8 +76,10 @@ with Typing : Ctx -> Exp -> Exp -> Prop :=
   Γ ⊢ t : S
 with SubstTyping : Ctx -> Subst -> Ctx -> Prop :=
 | subst_typing_id : forall Γ,
+  ⊢ Γ ->
   Γ ⊢s subst_id : Γ
 | subst_typing_shift : forall Γ T,
+  ⊢ (T :: Γ) ->
   (T :: Γ) ⊢s ↑ : Γ
 | subst_typing_comp : forall Γ1 Γ2 Γ3 σ1 σ2,
   Γ1 ⊢s σ1 : Γ2 ->
@@ -129,6 +132,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   (S :: Γ) ⊢ T ≈ T' : 𝕊 i ->
   Γ ⊢ exp_pi S T ≈ exp_pi S' T' : 𝕊 i
 | eq_exp_comp_var : forall Γ n T,
+  ⊢ Γ ->
   n : T ∈ Γ ->
   Γ ⊢ exp_var n ≈ exp_var n : T
 | eq_exp_comp_suc : forall Γ t t',
@@ -157,8 +161,8 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ (λ t) ▫ s ≈ t [| s ] : T [| s ] 
 | eq_exp_beta_rec_zero : forall Γ tz ts T i,
   (ℕ :: Γ) ⊢ T : 𝕊 i ->
-  (* why dont check ts? *)
   Γ ⊢ tz : T [| exp_zero ] ->
+  (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
   Γ ⊢ exp_rec T tz ts exp_zero ≈ tz : T [| exp_zero ]
 | eq_exp_beta_rec_suc : forall Γ tz ts tn T i,
   (ℕ :: Γ) ⊢ T : 𝕊 i ->
@@ -209,13 +213,15 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ t1 ≈ t3 : T
 with EqSubst : Ctx -> Subst -> Subst -> Ctx -> Prop :=
 | eq_subst_comp_id : forall Γ,
+  ⊢ Γ ->
   Γ ⊢s subst_id ≈ subst_id : Γ
 | eq_subst_comp_shift : forall T Γ,
+  ⊢ (T :: Γ) ->
   (T :: Γ) ⊢s ↑ ≈ ↑ : Γ
 | eq_subst_comp_comp : forall Γ1 Γ2 Γ3 σ1 σ1' σ2 σ2',
   Γ1 ⊢s σ1 ≈ σ1' : Γ2 ->
   Γ2 ⊢s σ2 ≈ σ2' : Γ3 ->
-  Γ1 ⊢s (σ2 ∘ σ1) ≈ (σ2' ∘ σ1') : Γ1
+  Γ1 ⊢s (σ2 ∘ σ1) ≈ (σ2' ∘ σ1') : Γ3
 | eq_subst_comp_ext : forall Γ Δ σ σ' t t' T i,
   Γ ⊢s σ ≈ σ' : Δ ->
   Δ ⊢ T : 𝕊 i ->
@@ -260,3 +266,26 @@ where "⊢ Γ" := (WfCtx Γ) and
       "Γ ⊢s σ : Δ" := (SubstTyping Γ σ Δ) and 
       "Γ ⊢ t ≈ t' : T" := (EqExp Γ t t' T) and 
       "Γ ⊢s σ ≈ σ' : Δ" := (EqSubst Γ σ σ' Δ).
+
+(* Scheme wf_ctx_ind := Induction for WfCtx Sort Prop
+  with eq_ctx_ind := Induction for EqCtx Sort Prop
+  with typing_ind := Induction for Typing Sort Prop
+  with subst_typing_ind := Induction for SubstTyping Sort Prop
+  with eq_exp_ind := Induction for EqExp Sort Prop 
+  with eq_subst_ind := Induction for EqSubst Sort Prop.
+
+Combined Scheme wf_ctx_eq_ctx_typing_subst_typing_eq_exp_eq_subst_mutind from wf_ctx_ind, eq_ctx_ind, typing_ind, subst_typing_ind, eq_exp_ind, eq_subst_ind.
+
+Hint Constructors WfCtx EqCtx Typing SubstTyping EqExp EqSubst : core.
+
+Lemma wf : 
+  (forall Γ, ⊢ Γ -> True ) /\ 
+  (forall Γ Δ, ⊢ Γ ≈ Δ -> ⊢ Γ /\ ⊢ Δ) /\
+  (forall Γ t T, Γ ⊢ t : T -> ⊢ Γ /\ exists i, Γ ⊢ T : exp_set i) /\
+  (forall Γ σ Δ, Γ ⊢s σ : Δ -> ⊢ Γ /\ ⊢ Δ) /\
+  (forall Γ t t' T, Γ ⊢ t ≈ t' : T -> ⊢ Γ /\ Γ ⊢ t : T /\ Γ ⊢ t' : T /\ exists i, Γ ⊢ T : exp_set i) /\
+  (forall Γ σ σ' Δ, Γ ⊢s σ ≈ σ' : Δ -> ⊢ Γ /\ Γ ⊢s σ : Δ /\ Γ ⊢s σ' : Δ /\ ⊢ Δ).
+Proof.
+  apply wf_ctx_eq_ctx_typing_subst_typing_eq_exp_eq_subst_mutind; intros; try solve [ intuition; eauto ].
+  - intuition; eauto. econstructor; eauto.
+Admitted. *)
