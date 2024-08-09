@@ -149,14 +149,14 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
   Γ ⊢ tn ≈ tn' : ℕ ->
   (ℕ :: Γ) ⊢ T ≈ T' : 𝕊 i ->
-  Γ ⊢ exp_rec T tz ts tn ≈ exp_rec T' tz' ts' tn' : T
+  Γ ⊢ exp_rec T tz ts tn ≈ exp_rec T' tz' ts' tn' : T [| tn ]
 | eq_exp_comp_abs : forall Γ t t' S T,
   (S :: Γ) ⊢ t ≈ t' : T ->
   Γ ⊢ (λ t) ≈ (λ t') : exp_pi S T
 | eq_exp_comp_subst : forall Γ Δ t t' σ σ' T,
   Γ ⊢s σ ≈ σ' : Δ ->
   Δ ⊢ t ≈ t' : T ->
-  Γ ⊢ t [ σ ] ≈ t' [ σ' ] : T
+  Γ ⊢ t [ σ ] ≈ t' [ σ' ] : T [ σ ]
 | eq_exp_beta_abs : forall Γ t s S T,
   (S :: Γ) ⊢ t : T ->
   Γ ⊢ s : S ->
@@ -171,8 +171,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ tz : T [| exp_zero ] ->
   (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
   Γ ⊢ tn : ℕ ->
-  (* Γ ⊢ exp_rec T tz ts (exp_suc tn) ≈ ts [ subst_ext (subst_ext subst_id tn) (exp_rec T tz ts tn) ] : subst0 T (exp_suc tn) *)
-  Γ ⊢ exp_rec T tz ts (exp_suc tn) ≈ ts ▫ tn ▫ exp_rec T tz ts tn : T [| exp_suc tn ]
+  Γ ⊢ exp_rec T tz ts (exp_suc tn) ≈ ts [ subst_ext (subst_ext subst_id tn) (exp_rec T tz ts tn) ] : subst0 T (exp_suc tn)
 | eq_exp_eta_abs : forall Γ t S T,
   Γ ⊢ t : exp_pi S T ->
   Γ ⊢ t ≈ exp_abs (t [ ↑ ] ▫ (exp_var 0)) : exp_pi S T
