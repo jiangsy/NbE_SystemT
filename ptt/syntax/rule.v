@@ -91,10 +91,10 @@ with SubstTyping : Ctx -> Subst -> Ctx -> Prop :=
   Δ ⊢ T : 𝕊 i ->
   Γ ⊢ t : T [ σ ] ->
   Γ ⊢s subst_ext σ t : (T :: Δ)
-| subst_typing_conv : forall Γ Δ σ σ',
+| subst_typing_conv : forall Γ Δ Δ' σ,
   Γ ⊢s σ : Δ ->
-  Γ ⊢s σ ≈ σ' : Δ ->
-  Γ ⊢s σ' : Δ
+  ⊢ Δ ≈ Δ' ->
+  Γ ⊢s σ : Δ'
 with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
 | eq_exp_prop_nat : forall Γ Δ σ i,
   Γ ⊢s σ : Δ ->
@@ -137,6 +137,9 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   ⊢ Γ ->
   n : T ∈ Γ ->
   Γ ⊢ exp_var n ≈ exp_var n : T
+| eq_exp_comp_zero : forall Γ t t',
+  ⊢ Γ ->
+  Γ ⊢ exp_zero ≈ exp_zero : ℕ
 | eq_exp_comp_suc : forall Γ t t',
   Γ ⊢ t ≈ t' : ℕ ->
   Γ ⊢ exp_suc t ≈ exp_suc t' : ℕ

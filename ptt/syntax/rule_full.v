@@ -101,10 +101,10 @@ with SubstTyping : Ctx -> Subst -> Ctx -> Prop :=
   Δ ⊢ T : 𝕊 i ->
   Γ ⊢ t : T [ σ ] ->
   Γ ⊢s subst_ext σ t : (T :: Δ)
-| subst_typing_conv : forall Γ Δ σ σ',
+| subst_typing_conv : forall Γ Δ Δ' σ,
   Γ ⊢s σ : Δ ->
-  Γ ⊢s σ ≈ σ' : Δ ->
-  Γ ⊢s σ' : Δ
+  ⊢ Δ ≈ Δ' ->
+  Γ ⊢s σ : Δ'
 with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
 | eq_exp_prop_nat : forall Γ Δ σ i,
   Γ ⊢s σ : Δ ->
@@ -124,9 +124,11 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢s σ : Δ ->
   Δ ⊢ t : ℕ ->
   Γ ⊢ exp_suc t [ σ ] ≈ exp_suc (t [ σ ]) : ℕ
-| eq_exp_prop_app : forall Γ Δ r s σ S T,
+| eq_exp_prop_app : forall Γ Δ r s σ S T i,
   Γ ⊢s σ : Δ ->
   Δ ⊢ r : exp_pi S T ->
+  Δ ⊢ S : exp_set i ->
+  (S :: Δ) ⊢ T : exp_set i ->
   Δ ⊢ s : S ->
   Γ ⊢ (r ▫ s) [ σ ] ≈ (r [ σ ]) ▫ (s [ σ ]) : T [ subst_ext σ (s [ σ ]) ]
 | eq_exp_prop_rec : forall Γ Δ σ tz ts tn T i,
@@ -149,6 +151,9 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   ⊢ Γ ->
   n : T ∈ Γ ->
   Γ ⊢ exp_var n ≈ exp_var n : T
+| eq_exp_comp_zero : forall Γ,
+  ⊢ Γ ->
+  Γ ⊢ exp_zero ≈ exp_zero : ℕ
 | eq_exp_comp_suc : forall Γ t t',
   Γ ⊢ t ≈ t' : ℕ ->
   Γ ⊢ exp_suc t ≈ exp_suc t' : ℕ
@@ -161,7 +166,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
 | eq_exp_comp_rec : forall Γ tz tz' ts ts' tn tn' T T' i,
   (ℕ :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ tz ≈ tz' : T [| exp_zero ] ->
-  (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
+  (T :: ℕ :: Γ) ⊢ ts ≈ ts' : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
   Γ ⊢ tn ≈ tn' : ℕ ->
   (ℕ :: Γ) ⊢ T ≈ T' : 𝕊 i ->
   Γ ⊢ exp_rec T tz ts tn ≈ exp_rec T' tz' ts' tn' : T [| tn ]
@@ -189,7 +194,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ tz : T [| exp_zero ] ->
   (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
   Γ ⊢ tn : ℕ ->
-  Γ ⊢ exp_rec T tz ts (exp_suc tn) ≈ ts [ subst_ext (subst_ext subst_id tn) (exp_rec T tz ts tn) ] : subst0 T (exp_suc tn)
+  Γ ⊢ exp_rec T tz ts (exp_suc tn) ≈ ts [ subst_ext (subst_ext subst_id tn) (exp_rec T tz ts tn) ] : T [| exp_suc tn ]
 | eq_exp_eta_abs : forall Γ t S T i,
   Γ ⊢ S : 𝕊 i ->
   (S :: Γ) ⊢ T : 𝕊 i ->
@@ -320,6 +325,15 @@ Proof.
   intros. eauto. 
 Qed.
 
+Lemma eq_typ_subst_inv : forall Γ Δ σ σ' T T' i,
+  Γ ⊢s σ : Δ ->
+  Γ ⊢s σ ≈ σ' : Δ ->
+  Δ ⊢ T ≈ T' : exp_set i ->
+  Γ ⊢ T [σ] ≈ T' [σ'] : exp_set i.
+Proof.
+  intros. eapply eq_exp_conv; eauto.
+Qed.
+
 Lemma wf_typ_cumu_larger_add : forall Γ T i k,
   Γ ⊢ T : exp_set i ->
   Γ ⊢ T : exp_set (k + i).
@@ -342,6 +356,20 @@ Proof.
 Qed.
 
 Hint Resolve wf_typ_subst_inv : core.
+
+Lemma eq_ctx_sym : forall Γ Γ',
+  ⊢ Γ ≈ Γ' ->
+  ⊢ Γ' ≈ Γ.
+Proof.
+  intros. induction H; eauto.
+Qed.
+
+Lemma eq_exp_refl : forall Γ t T,
+  Γ ⊢ t : T ->
+  Γ ⊢ t ≈ t : T.
+Proof.
+  eauto.
+Qed.
 
 Lemma presupposition : 
   (forall Γ, ⊢ Γ -> ⊢ Γ ) /\ 
@@ -387,24 +415,66 @@ Proof.
         econstructor; eauto.
     + eauto. 
   - intuition.
-    + admit. 
-    + admit.
-    + admit.
+    + eapply typing_conv with (T:=T [subst_ext subst_id s] [σ]) (i:=i); eauto.
+      econstructor; eauto. econstructor; eauto.
+      apply eq_exp_trans with (t2:=T [subst_ext subst_id s ∘ σ]); eauto.
+      eapply eq_exp_conv with (T:=exp_set i [subst_ext subst_id s ∘ σ]); eauto.
+      eapply eq_exp_sym. eapply eq_exp_subst_comp; eauto. econstructor; eauto.
+      repeat (econstructor; eauto).
+      eapply eq_typ_subst_inv; eauto. repeat (econstructor; eauto).
+      eapply eq_subst_trans with (σ2:=subst_ext (subst_id ∘ σ) (s [σ])); eauto.
+      eapply eq_subst_prop_ext; eauto.
+      eapply eq_subst_comp_ext; eauto.
+      eapply eq_exp_conv with (T:=S [σ]) (i:=i); eauto.
+      eapply eq_exp_refl; eauto.
+      eapply eq_typ_subst_inv; eauto.
+    + eapply typing_conv with (T := T [subst_ext (σ ∘ ↑) (exp_var 0)] [| s [σ] ]) (i:=i).
+      * eapply typing_app with (S:=S [σ]) (i:=i); eauto.
+        eapply wf_typ_subst_inv; eauto.
+        econstructor; eauto.
+        eapply typing_conv with (T := S [σ] [↑]) (i := i); eauto.
+        eapply eq_exp_conv with (T := (exp_set i) [σ ∘ ↑]) (i := 1 + i); eauto.
+        eapply eq_exp_sym. eauto.
+        econstructor; eauto.
+      * unfold subst0. eapply eq_exp_trans with (t2 := T [subst_ext (σ ∘ ↑) (exp_var 0) ∘ subst_ext subst_id (s [σ])]); eauto.
+        eapply eq_exp_conv with (T := exp_set i  [subst_ext (σ ∘ ↑) (exp_var 0) ∘ subst_ext subst_id (s [σ])]) (i := 1 + i); eauto.
+        eapply eq_exp_sym; eauto. eapply eq_exp_subst_comp with (Γ2:=S [σ] :: Γ); eauto.
+        econstructor; eauto. admit.
+        econstructor; eauto. admit. 
+        eapply eq_exp_prop_set with (Δ:=S :: Δ). 
+        eapply subst_typing_comp with (Γ2:=S [σ] :: Γ); eauto. econstructor; eauto.
+        econstructor; eauto. econstructor; eauto. econstructor; eauto. admit.
+        eapply eq_typ_subst_inv; eauto.  eapply subst_typing_comp with (Γ2:=S [σ] :: Γ); eauto.  admit. admit.
+        admit. (* 1, ** *)
+    + exists i; eauto.
+      eapply wf_typ_subst_inv with (σ := subst_ext σ (s [σ])); eauto.
+      econstructor; eauto.
   - intuition.
-    + admit. 
-    + admit.
-    + admit.
-  - intuition; inversion H; subst; eauto.
-    + admit.
-    + destruct H3 as [i1]; eauto.
-      exists (max i i1); eauto.
+    + admit. (* 2, *)
+    + admit. (* 3, *)
+    + exists i; eauto.
+      eapply wf_typ_subst_inv with (σ := subst_ext σ (tn [σ])); eauto.
+      econstructor; eauto.
+  - intuition; inversion H; subst; destruct H3 as [i1]; eauto.
+    + eapply typing_conv with (T := exp_pi (S [σ]) (T [subst_ext (σ ∘ ↑) (exp_var 0)])) (i:=max i i1); eauto.
+      * econstructor; eauto. econstructor; eauto.
+        econstructor; eauto.
+        eapply typing_conv with (T := S [σ] [↑]) (i:=i); eauto; eauto.
+        apply eq_exp_sym; eauto.
+        eapply eq_exp_conv with (T := exp_set i [σ ∘ ↑]) (i := 1+ i); eauto.
+        econstructor; eauto. 
+      * apply eq_exp_sym; eauto.
+        eapply eq_exp_prop_pi; eauto.
+        -- eapply wf_typ_cumu_larger with (i:=i); auto. lia.
+        -- eapply wf_typ_cumu_larger with (i:=i1); auto. lia.
+    + exists (max i i1); eauto.
       eapply wf_typ_subst_inv; eauto.
       econstructor; eauto. 
       * eapply wf_typ_cumu_larger with (i:=i); auto. lia.
       * eapply wf_typ_cumu_larger with (i:=i1); auto. lia.
   - intuition. 
     econstructor; eauto. 
-    admit. (* EquivCtx *)
+    admit. (* 4, EquivCtx *)
   - intuition.
     eapply wf_typ_in_wf_ctx; eauto.
   - intuition; eauto.
@@ -417,24 +487,30 @@ Proof.
       econstructor; eauto.
   (* eq_exp_comp_rec *)
   - intuition; eauto.
-    + admit.
+    + eapply typing_conv with (T := T' [| tn' ]) (i:=i); eauto.
+      * eapply typing_rec; eauto.
+       eapply typing_conv with (T:= T [|exp_zero]) (i:=i); eauto.
+       eapply eq_typ_subst_inv; eauto;
+       repeat (econstructor; eauto). 
+       admit. (* 6, EquivCtx *)
+      * eapply eq_typ_subst_inv; eauto. econstructor; eauto.
+        econstructor; eauto. econstructor; eauto. 
     + exists i. eapply wf_typ_subst_inv; eauto. econstructor; eauto.
   - intuition; eauto. 
     + destruct H5 as [i1]. exists (max i i1); eauto.
       econstructor; eauto.
-      admit.
-      admit.
+      * eapply wf_typ_cumu_larger with (i:=i); auto. lia.
+      * eapply wf_typ_cumu_larger with (i:=i1); auto. lia.
   - intuition; eauto.
     + destruct H7 as [i]. eapply typing_conv with (T := T [σ']) (i:=i); eauto.
-      admit.
-      (* eapply eq_exp_comp_subst; eauto. *)
+      eapply eq_typ_subst_inv; eauto.
     + destruct H7 as [i]. eauto. 
   - intuition; eauto. 
-    + admit. 
+    + econstructor; eauto. econstructor; eauto.
     + destruct H6 as [i1]. exists i1; auto.
       eapply wf_typ_subst_inv; eauto. econstructor; eauto.
   - intuition; eauto.
-    + admit.
+    + admit. (* 7, *** *)
     + exists i; auto.
       eapply wf_typ_subst_inv with (Δ:=ℕ :: Γ); eauto. 
       econstructor; eauto. econstructor; eauto.
@@ -450,9 +526,9 @@ Proof.
       eapply eq_exp_sym. 
       eapply eq_exp_subst_comp with (Γ2:=S :: Γ); eauto.
       eapply eq_exp_prop_set with (Δ := Γ); eauto. econstructor; econstructor; eauto.
-    + admit.
+    + econstructor; eauto. 
     + econstructor; eauto.
-    + admit.
+    + unfold subst0. admit. (* 8, *** *)
   - intuition. destruct H1 as [i]. eauto.
   - intuition. inversion H; subst; eauto.
     inversion H; subst; auto.
@@ -466,18 +542,41 @@ Proof.
     eapply typing_conv with (T:=S [ ↑ ] [subst_ext σ s]) (i:=i).
     econstructor; eauto. econstructor; eauto. econstructor; eauto.
     eapply eq_exp_trans with (t2:=S [↑ ∘ (subst_ext σ s)]); eauto.
-    apply eq_exp_sym. admit. admit.
-    (* eapply eq_exp_comp_subst; eauto. *)
+    apply eq_exp_sym. 
+    eapply eq_exp_conv with (T := exp_set i [↑ ∘ subst_ext σ s]) (i:=1+i); eauto.
+    eapply eq_exp_subst_comp; eauto;
+    repeat (econstructor; eauto). 
+    repeat (econstructor; eauto). 
+    eapply eq_typ_subst_inv; eauto.
+    repeat (econstructor; eauto).
   (* eq_subst_ext *)
   - intuition; eauto. 
-    + admit. 
+    + apply wf_typ_in_wf_ctx in i0 as Hwft; eauto. 
+      destruct Hwft as [i1].
+      eapply typing_conv with (T:=T [↑] [subst_ext σ s] ) (i:=i1); eauto.
+      eapply typing_subst with (Δ:=S :: Δ); eauto.
+      eapply eq_exp_trans with (t2:=T [↑ ∘ subst_ext σ s]); eauto.
+      eapply eq_exp_conv with (T:=exp_set i1 [↑ ∘ subst_ext σ s]) (i:=1+i1); eauto.
+      apply eq_exp_sym; eauto. eapply eq_exp_subst_comp with (Γ2:=S::Δ);  eauto.
+      eapply eq_exp_prop_set with (Δ:=Δ); eauto. 
+      eapply subst_typing_comp with (Γ2:=S :: Δ); eauto.
+      eapply eq_typ_subst_inv; eauto.
+      apply subst_typing_comp with (Γ2:=S :: Δ); eauto.
     + apply wf_typ_in_wf_ctx in i0; eauto. 
       destruct i0 as [i1]. eauto.
   (* eq_subst_shift *)
   - intuition. inversion H; subst; eauto. 
-  - intuition. 
-    admit. (* EquivCtx *)
-    admit. (* EquivCtx *)
+  - intuition; eauto.
+    econstructor; eauto.
+    eapply typing_conv with (i:=i); eauto.
+    eapply eq_typ_subst_inv; eauto. 
+  - intuition; eauto.
+    econstructor; eauto.
+    eapply typing_conv with (i:=i); eauto.
+    eapply eq_exp_conv with (T := 𝕊 i [σ ∘ τ]) (i := 1 + i); eauto.
+  - intuition. econstructor; eauto.
+    econstructor; eauto.
+    econstructor; eauto.
   Unshelve. all : eauto. 
 Admitted.
   
