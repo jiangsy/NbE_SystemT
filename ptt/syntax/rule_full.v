@@ -135,7 +135,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢s σ : Δ ->
   (ℕ :: Δ) ⊢ T : 𝕊 i ->
   Δ ⊢ tz : T [| exp_zero ] ->
-  (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext ( ↑ ∘ ↑ ) (exp_var 1) ] ->
+  (T :: ℕ :: Δ) ⊢ ts : T [ subst_ext ( ↑ ∘ ↑ ) (exp_suc (exp_var 1)) ] ->
   Δ ⊢ tn : ℕ ->
   Γ ⊢ exp_rec T tz ts tn [ σ ] ≈ exp_rec (T [q σ]) (tz [σ]) (ts [q (q σ)]) (tn [ σ ]) : T [ subst_ext σ (tn [ σ ]) ]
 | eq_exp_prop_abs : forall Γ Δ σ t S T,
@@ -270,6 +270,9 @@ with EqSubst : Ctx -> Subst -> Subst -> Ctx -> Prop :=
   Γ3 ⊢ T : 𝕊 i ->
   Γ2 ⊢ t : T [ σ ] ->
   Γ1 ⊢s subst_ext σ t ∘ τ ≈ subst_ext (σ ∘ τ) (t [ τ ]) : (T :: Γ3) 
+| eq_subst_eta_ext : forall Γ Δ σ T,
+  Γ ⊢s σ : (T :: Δ) ->
+  Γ ⊢s σ ≈ subst_ext (↑ ∘ σ) (exp_var 0 [σ]) : (T :: Δ)
 | eq_subst_prop_shift : forall Γ Δ σ t T i,
   Γ ⊢s σ : Δ ->
   Δ ⊢ T : 𝕊 i ->
@@ -371,6 +374,154 @@ Proof.
   eauto.
 Qed.
 
+Lemma eq_subst_refl : forall Γ σ Δ,
+  Γ ⊢s σ : Δ ->
+  Γ ⊢s σ ≈ σ : Δ.
+Proof.
+  eauto.
+Qed.
+
+Lemma eq_ctx_refl : forall Γ,
+  ⊢ Γ ->
+  ⊢ Γ ≈ Γ.
+Proof.
+  intros. induction H; auto.
+  - econstructor; eauto.
+Qed.
+
+Lemma eq_ctx_typing : forall Γ Δ t T,
+  Γ ⊢ t : T ->
+  ⊢ Γ ≈ Δ ->
+  Δ ⊢ t : T.
+Proof.
+Admitted.
+
+Lemma var0_subst_comp : forall Γ Δ σ T i,
+  Γ ⊢s σ : Δ ->
+  Δ ⊢ T : 𝕊 i ->
+  ⊢ (T [σ] :: Γ) ->
+  (T [σ] :: Γ) ⊢ exp_var 0 : T [σ ∘ ↑].
+Proof.
+  intros. inversion H1; subst; auto. 
+  eapply typing_conv with (T := T [σ] [↑]) (i:=i); eauto.
+  eapply eq_exp_conv with (T := exp_set i [σ ∘ ↑]); eauto.
+Qed.
+
+Lemma suc_var1_nat : forall Γ T i,
+  ⊢ Γ ->
+  (ℕ :: Γ) ⊢ T : 𝕊 i ->
+  (T :: ℕ :: Γ) ⊢ exp_suc (exp_var 1) : ℕ [↑ ∘ ↑].
+Proof.
+  intros. eapply typing_conv with (T := ℕ) (i:=0); eauto.
+  - econstructor. eapply typing_conv with (T := ℕ [↑] [↑]).
+    eapply typing_var; eauto.
+    eapply eq_exp_trans with (t2 := ℕ [↑ ∘ ↑]) (T:=exp_set 0); eauto.
+    + eapply eq_exp_conv with (T := exp_set 0 [↑ ∘ ↑]); eauto.
+      eapply eq_exp_sym; eauto.
+      eapply eq_exp_subst_comp; eauto.
+      eapply eq_exp_prop_set; eauto.
+      econstructor; eauto.
+    + eapply eq_exp_prop_nat; eauto.
+      econstructor; eauto.
+  - eapply eq_exp_sym. eapply eq_exp_prop_nat; eauto.
+      econstructor; eauto.
+  Unshelve. all: eauto.
+Qed.
+
+Lemma ctx_upshift_same_type_twice : forall Γ T i,
+  ⊢ Γ ->
+  Γ ⊢ T : 𝕊 i ->
+  (T [↑] :: T :: Γ) ⊢s ↑ : (T :: Γ).
+Proof.
+  intros. econstructor; eauto.
+  econstructor; eauto.
+Qed.
+
+Lemma var0_subst_id : forall Γ T i,
+  ⊢ Γ ->
+  Γ ⊢ T : 𝕊 i ->
+  (T :: Γ) ⊢ exp_var 0 : T [↑] [subst_id].
+Proof.
+  intros.  eapply typing_conv with (T := T [↑]) (i:=i); eauto.
+  apply eq_exp_sym; eauto.
+Qed.
+
+Lemma eq_typ_subst_comp : forall Γ1 Γ2 Γ3 σ1 σ2 T i,
+  Γ1 ⊢s σ1 : Γ2 ->
+  Γ2 ⊢s σ2 : Γ3 ->
+  Γ3 ⊢ T : exp_set i ->
+  Γ1 ⊢ T [σ2 ∘ σ1] ≈ T [σ2] [σ1] : exp_set i.
+Proof.
+  intros. 
+  apply eq_exp_conv with (T := exp_set i [σ2 ∘ σ1]) (i := 1 + i); eauto.
+Qed.
+
+Lemma subst_ext_shift_twice_comp_subst0_eq_id : forall T Γ i,
+  ⊢ Γ ->
+  Γ ⊢ T : exp_set i ->
+  (T :: Γ) ⊢s subst_ext (↑ ∘ ↑) (exp_var 0) ∘ (subst_ext subst_id (exp_var 0)) ≈ subst_id : (T :: Γ).
+Proof with eauto using ctx_upshift_same_type_twice, var0_subst_id, eq_typ_subst_comp.
+  intros. apply eq_subst_trans with (σ2 := subst_ext ((↑ ∘ ↑) ∘ (subst_ext subst_id (exp_var 0))) (exp_var 0 [ subst_ext subst_id (exp_var 0)])); eauto.
+  - eapply eq_subst_prop_ext with (Γ2:=T [↑] :: T :: Γ); eauto.
+    + econstructor; eauto. eapply var0_subst_id; eauto. 
+    + econstructor; eauto; econstructor; eauto.
+      econstructor; eauto.
+    + eapply var0_subst_comp; eauto.
+      econstructor; eauto.
+  - assert ((T [↑] :: T :: Γ) ⊢s ↑ : (T :: Γ)). {
+      repeat (econstructor; eauto).
+    }
+    assert (⊢ (T [↑] :: T :: Γ)). {
+      repeat (econstructor; eauto).
+    }
+    assert ((T :: Γ) ⊢ exp_var 0 [subst_ext subst_id (exp_var 0)] : T [↑]). {
+      inversion H2; subst; auto.
+      eapply typing_conv with (T := T [↑] [↑] [subst_ext subst_id (exp_var 0)]) (i := i0); eauto...
+        do 4 (econstructor; eauto).
+      eapply eq_exp_trans with (t2:=T [↑] [↑ ∘ subst_ext subst_id (exp_var 0)]); eauto.
+        eapply eq_exp_conv with (T := exp_set i0 [↑ ∘ subst_ext subst_id (exp_var 0)]) (i:=1 + i0).
+        eapply eq_exp_sym; eauto. eapply eq_exp_subst_comp; eauto... repeat (econstructor; eauto). 
+      eapply eq_exp_trans with (t2:=T [↑] [subst_id]); eauto...
+      eapply eq_typ_subst_inv...
+      econstructor; eauto...
+    }
+    assert ((T :: Γ) ⊢s subst_ext subst_id (exp_var 0) : (T [↑] :: T :: Γ)). {
+      econstructor; eauto.
+      eapply var0_subst_id; eauto.
+    }
+    eapply eq_subst_trans with (σ2:=subst_ext (↑ ∘ (↑ ∘ subst_ext subst_id (exp_var 0))) (exp_var 0 [subst_ext subst_id (exp_var 0)])).
+    eapply eq_subst_comp_ext; eauto.
+    eapply eq_exp_conv with (T := T [(↑ ∘ ↑)] [subst_ext subst_id (exp_var 0)]) (i:=i); eauto.
+      econstructor; eauto. eapply eq_exp_refl; eauto. eapply var0_subst_comp; eauto.
+      eapply eq_exp_conv with (T := exp_set i [(↑ ∘ ↑) ∘ subst_ext subst_id (exp_var 0)]) (i:=1+i); eauto.
+      eapply eq_exp_sym...
+      eapply eq_exp_prop_set; eauto.
+    eapply eq_subst_trans with (σ2:=subst_ext (↑ ∘ subst_id) (exp_var 0 [subst_ext subst_id (exp_var 0)])).
+      eapply eq_subst_comp_ext; eauto. eapply eq_subst_comp_comp with (Γ2:=T :: Γ); eauto.
+      eapply eq_subst_prop_shift with (T := T [↑]); eauto...
+      eapply eq_exp_conv with (T := T [↑ ∘ ↑]  [subst_ext subst_id (exp_var 0)]) (i := i). 
+        eapply eq_exp_refl. 
+        eapply typing_subst with (Δ:=T [↑] :: T :: Γ); eauto...
+        eapply var0_subst_comp; eauto...
+        eapply eq_exp_trans with (t2 := T [(↑ ∘ ↑) ∘ subst_ext subst_id (exp_var 0)]); eauto.
+        eapply eq_exp_conv with (T := exp_set i [(↑ ∘ ↑) ∘ subst_ext subst_id (exp_var 0)]); eauto.
+        eapply eq_exp_sym. eapply eq_exp_subst_comp; eauto...
+          econstructor; eauto.
+          eapply eq_typ_subst_inv; eauto.
+    eapply eq_subst_trans with (σ2:=subst_ext (↑ ∘ subst_id) (exp_var 0))...
+      eapply eq_subst_comp_ext; eauto... econstructor; eauto...
+      eapply eq_exp_conv with (T := T [↑] [subst_id]); eauto.
+      eapply eq_exp_subst_ext_var_0; eauto. eapply var0_subst_id; eauto.
+      eapply eq_exp_sym... eapply eq_typ_subst_comp; eauto.
+    eapply eq_subst_trans with (σ2:=subst_ext (↑ ∘ subst_id) (exp_var 0 [subst_id])); eauto.
+      eapply eq_subst_comp_ext; eauto. econstructor; eauto.
+      eapply eq_exp_sym. eapply eq_exp_subst_id; eauto.
+      eapply typing_conv with (T := T [↑] [subst_id]) (i:=i); eauto.
+      eapply var0_subst_id; eauto.
+      eapply eq_exp_sym; eauto.
+      eapply eq_typ_subst_comp; eauto.
+Qed.
+ 
 Lemma presupposition : 
   (forall Γ, ⊢ Γ -> ⊢ Γ ) /\ 
   (forall Γ Δ, ⊢ Γ ≈ Δ -> ⊢ Γ /\ ⊢ Δ) /\
@@ -436,22 +587,65 @@ Proof.
         eapply eq_exp_conv with (T := (exp_set i) [σ ∘ ↑]) (i := 1 + i); eauto.
         eapply eq_exp_sym. eauto.
         econstructor; eauto.
-      * unfold subst0. eapply eq_exp_trans with (t2 := T [subst_ext (σ ∘ ↑) (exp_var 0) ∘ subst_ext subst_id (s [σ])]); eauto.
+      * assert (Γ ⊢s subst_ext subst_id (s [σ]) : (S [σ] :: Γ)). {
+          repeat (econstructor; eauto).
+        }
+        assert (Γ ⊢ s [σ] : S [σ] [subst_id]). {
+          repeat (econstructor; eauto).
+        }
+        assert (Γ ⊢s subst_ext (σ ∘ ↑) (exp_var 0) ∘ subst_ext subst_id (s [σ]) ≈  subst_ext σ (s [σ]) : (S :: Δ)). {
+          eapply eq_subst_trans with (σ2 := subst_ext ((σ ∘ ↑) ∘ subst_ext subst_id (s [σ])) ((exp_var 0) [subst_ext subst_id (s [σ])])); eauto.
+            eapply eq_subst_prop_ext; eauto. eapply var0_subst_comp; eauto.
+          eapply eq_subst_comp_ext; eauto.
+            eapply eq_subst_trans with (σ2:=σ ∘ ↑ ∘ subst_ext subst_id (s [σ])); eauto.
+            eapply eq_subst_trans with (σ2:=σ ∘ subst_id); eauto.
+            eapply eq_subst_comp_comp; eauto.
+          eapply eq_exp_conv with (T := S [σ] [subst_id]) (i := i); eauto.
+          eapply eq_exp_trans with (t2 := S [σ ∘ ↑ ∘ subst_ext subst_id (s [σ])]); eauto.
+          apply eq_exp_trans with (t2 := S [σ ∘ subst_id]); eauto.
+            eapply eq_exp_sym. eapply eq_typ_subst_comp; eauto.
+            eapply eq_typ_subst_inv; eauto. eapply eq_subst_comp_comp; eauto.
+          eapply eq_typ_subst_inv; eauto. econstructor; eauto.
+          eapply eq_subst_sym. eapply eq_subst_assoc; eauto.
+        }
+        unfold subst0. eapply eq_exp_trans with (t2 := T [subst_ext (σ ∘ ↑) (exp_var 0) ∘ subst_ext subst_id (s [σ])]); eauto.
         eapply eq_exp_conv with (T := exp_set i  [subst_ext (σ ∘ ↑) (exp_var 0) ∘ subst_ext subst_id (s [σ])]) (i := 1 + i); eauto.
         eapply eq_exp_sym; eauto. eapply eq_exp_subst_comp with (Γ2:=S [σ] :: Γ); eauto.
-        econstructor; eauto. admit.
-        econstructor; eauto. admit. 
+        econstructor; eauto.
+        eapply var0_subst_comp; eauto.
         eapply eq_exp_prop_set with (Δ:=S :: Δ). 
         eapply subst_typing_comp with (Γ2:=S [σ] :: Γ); eauto. econstructor; eauto.
-        econstructor; eauto. econstructor; eauto. econstructor; eauto. admit.
-        eapply eq_typ_subst_inv; eauto.  eapply subst_typing_comp with (Γ2:=S [σ] :: Γ); eauto.  admit. admit.
-        admit. (* 1, ** *)
+        eapply var0_subst_comp; eauto.
+        eapply eq_typ_subst_inv; eauto. 
+        eapply subst_typing_comp with (Γ2:=S [σ] :: Γ); eauto.
+        econstructor; eauto. 
+        eapply var0_subst_comp; eauto.
     + exists i; eauto.
       eapply wf_typ_subst_inv with (σ := subst_ext σ (s [σ])); eauto.
       econstructor; eauto.
-  - intuition.
-    + admit. (* 2, *)
-    + admit. (* 3, *)
+  - intuition; destruct H8 as [i1].
+    + eapply typing_conv with (T := T [subst_ext subst_id tn] [σ]) (i:=i); eauto.
+      eapply eq_exp_trans with (t2:=T [subst_ext subst_id tn ∘ σ]); eauto.
+      eapply eq_exp_sym; eauto.
+      eapply eq_exp_conv with (T := exp_set i [subst_ext subst_id tn ∘ σ]) (i:=1+i); eauto.
+      eapply eq_exp_subst_comp with (Γ3:=ℕ::Δ); eauto.
+      eapply subst_typing_ext; eauto.
+      eapply eq_exp_prop_set with (Δ:=ℕ::Δ); eauto. 
+      econstructor; eauto. econstructor; eauto.
+      eapply eq_typ_subst_inv; eauto.
+      repeat (econstructor; eauto).
+      eapply eq_subst_trans with (σ2:=subst_ext (subst_id ∘ σ) (tn [σ])); eauto.
+      eapply eq_subst_prop_ext; eauto.
+      eapply eq_subst_comp_ext; eauto. eapply eq_exp_conv with (T :=  ℕ [subst_id] [σ]) (i:=0); eauto.
+      * econstructor; eauto. eapply eq_exp_conv with (T := ℕ); eauto.
+      * eapply eq_exp_conv with (T := exp_set 0 [subst_id ∘ σ]); eauto.
+    + eapply typing_conv with (T := T [q σ] [|tn [σ]]) (i:=i1); eauto.
+      eapply typing_rec with (i:=i1).
+      * admit. (* 1, *)
+      * admit. (* 2, *)
+      * admit. (* 3, *)
+      * econstructor; eauto.
+      * unfold q. admit. (* 4, *)
     + exists i; eauto.
       eapply wf_typ_subst_inv with (σ := subst_ext σ (tn [σ])); eauto.
       econstructor; eauto.
@@ -459,10 +653,7 @@ Proof.
     + eapply typing_conv with (T := exp_pi (S [σ]) (T [subst_ext (σ ∘ ↑) (exp_var 0)])) (i:=max i i1); eauto.
       * econstructor; eauto. econstructor; eauto.
         econstructor; eauto.
-        eapply typing_conv with (T := S [σ] [↑]) (i:=i); eauto; eauto.
-        apply eq_exp_sym; eauto.
-        eapply eq_exp_conv with (T := exp_set i [σ ∘ ↑]) (i := 1+ i); eauto.
-        econstructor; eauto. 
+        eapply var0_subst_comp; eauto.
       * apply eq_exp_sym; eauto.
         eapply eq_exp_prop_pi; eauto.
         -- eapply wf_typ_cumu_larger with (i:=i); auto. lia.
@@ -474,7 +665,7 @@ Proof.
       * eapply wf_typ_cumu_larger with (i:=i1); auto. lia.
   - intuition. 
     econstructor; eauto. 
-    admit. (* 4, EquivCtx *)
+    eapply eq_ctx_typing; eauto using eq_ctx_refl. 
   - intuition.
     eapply wf_typ_in_wf_ctx; eauto.
   - intuition; eauto.
@@ -492,7 +683,12 @@ Proof.
        eapply typing_conv with (T:= T [|exp_zero]) (i:=i); eauto.
        eapply eq_typ_subst_inv; eauto;
        repeat (econstructor; eauto). 
-       admit. (* 6, EquivCtx *)
+       eapply typing_conv with (T := T [subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1))]) (i:=i); eauto.
+       eapply eq_ctx_typing with (Γ:=(T :: ℕ :: Γ)); eauto. econstructor; eauto. apply eq_ctx_refl; auto.
+       eapply eq_typ_subst_inv; eauto.
+       econstructor; eauto. eapply suc_var1_nat; eauto.
+       eapply eq_subst_comp_ext; eauto.
+       eapply eq_exp_refl. eapply suc_var1_nat; eauto.
       * eapply eq_typ_subst_inv; eauto. econstructor; eauto.
         econstructor; eauto. econstructor; eauto. 
     + exists i. eapply wf_typ_subst_inv; eauto. econstructor; eauto.
@@ -510,7 +706,10 @@ Proof.
     + destruct H6 as [i1]. exists i1; auto.
       eapply wf_typ_subst_inv; eauto. econstructor; eauto.
   - intuition; eauto.
-    + admit. (* 7, *** *)
+    + eapply typing_conv with (T := T [subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1))] [subst_ext (subst_ext subst_id tn)
+          (exp_rec T tz ts tn)]) (i:=i); eauto.
+      repeat (econstructor; eauto).
+      admit. (* 5, *** *)
     + exists i; auto.
       eapply wf_typ_subst_inv with (Δ:=ℕ :: Γ); eauto. 
       econstructor; eauto. econstructor; eauto.
@@ -519,16 +718,30 @@ Proof.
     eapply typing_app with (S := S [↑]) (i := i).
     inversion t2; subst; eauto.
     + eapply wf_typ_subst_inv; eauto.
-      econstructor; eauto.
-      eapply subst_typing_comp with (Γ2 := S :: Γ); eauto. 
-      eapply typing_conv with (T := S [↑] [↑]) (i := i); eauto.
-      eapply eq_exp_conv with (T := 𝕊 i [↑ ∘ ↑]) (i := 1 + i); eauto.
-      eapply eq_exp_sym. 
-      eapply eq_exp_subst_comp with (Γ2:=S :: Γ); eauto.
-      eapply eq_exp_prop_set with (Δ := Γ); eauto. econstructor; econstructor; eauto.
+      econstructor; eauto. econstructor; eauto.
+      eapply var0_subst_comp; eauto.
     + econstructor; eauto. 
     + econstructor; eauto.
-    + unfold subst0. admit. (* 8, *** *)
+    + unfold subst0.
+      apply eq_exp_trans with (t2 := T [subst_ext (↑ ∘ ↑) (exp_var 0) ∘ subst_ext subst_id (exp_var 0)]); eauto.
+      eapply eq_exp_sym; eauto. 
+      eapply eq_exp_conv with (T := exp_set i [subst_ext (↑ ∘ ↑) (exp_var 0) ∘ subst_ext subst_id (exp_var 0)]); eauto.
+      eapply eq_exp_subst_comp with (Γ2:=S [↑] :: S :: Γ); eauto.
+      eapply subst_typing_ext with (Δ:=S :: Γ); eauto.
+      eapply typing_conv with (T := S [↑]); eauto.
+        econstructor; eauto. econstructor; eauto. 
+        eapply var0_subst_comp; eauto. 
+        eapply eq_exp_prop_set with (Δ:=S :: Γ); eauto.
+        eapply subst_typing_comp with (Γ2:=S [↑] :: S :: Γ); eauto.
+        econstructor; eauto. eapply typing_conv with (T := S [↑]); eauto.
+        econstructor; eauto. econstructor; eauto. eapply var0_subst_comp; eauto.
+      eapply eq_exp_trans with (t2 := T [subst_id]); eauto.
+      eapply eq_typ_subst_inv; eauto.
+      eapply subst_typing_comp with (Γ2:=S [↑] :: S :: Γ); eauto.
+        econstructor; eauto. eapply typing_conv with (T := S [↑]); eauto. 
+        econstructor; eauto. econstructor; eauto. 
+        eapply var0_subst_comp; eauto.
+      eapply subst_ext_shift_twice_comp_subst0_eq_id; eauto.
   - intuition. destruct H1 as [i]. eauto.
   - intuition. inversion H; subst; eauto.
     inversion H; subst; auto.
@@ -574,6 +787,10 @@ Proof.
     econstructor; eauto.
     eapply typing_conv with (i:=i); eauto.
     eapply eq_exp_conv with (T := 𝕊 i [σ ∘ τ]) (i := 1 + i); eauto.
+  - intuition; eauto. inversion H1; subst; eauto.
+    econstructor; eauto.
+    eapply typing_conv with (T := T [↑] [σ]) (i := i); eauto.
+    eapply eq_exp_sym. eapply eq_exp_conv with (T := exp_set i [↑ ∘ σ]); eauto.
   - intuition. econstructor; eauto.
     econstructor; eauto.
     econstructor; eauto.

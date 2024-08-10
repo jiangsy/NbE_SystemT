@@ -122,7 +122,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢s σ : Δ ->
   (ℕ :: Δ) ⊢ T : 𝕊 i ->
   Δ ⊢ tz : T [| exp_zero ] ->
-  (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext ( ↑ ∘ ↑ ) (exp_var 1) ] ->
+  (T :: ℕ :: Δ) ⊢ ts : T [ subst_ext ( ↑ ∘ ↑ ) (exp_suc (exp_var 1)) ] ->
   Δ ⊢ tn : ℕ ->
   Γ ⊢ exp_rec T tz ts tn [ σ ] ≈ exp_rec (T [q σ]) (tz [σ]) (ts [q (q σ)]) (tn [ σ ]) : T [ subst_ext σ (tn [ σ ]) ]
 | eq_exp_prop_abs : forall Γ Δ σ t S T,
@@ -137,7 +137,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   ⊢ Γ ->
   n : T ∈ Γ ->
   Γ ⊢ exp_var n ≈ exp_var n : T
-| eq_exp_comp_zero : forall Γ t t',
+| eq_exp_comp_zero : forall Γ,
   ⊢ Γ ->
   Γ ⊢ exp_zero ≈ exp_zero : ℕ
 | eq_exp_comp_suc : forall Γ t t',
@@ -253,6 +253,9 @@ with EqSubst : Ctx -> Subst -> Subst -> Ctx -> Prop :=
   Δ ⊢ T : 𝕊 i ->
   Γ ⊢ t : T [ σ ] ->
   Γ ⊢s ↑ ∘ (subst_ext σ t) ≈ σ : Δ
+| eq_subst_eta_ext : forall Γ Δ σ T,
+  Γ ⊢s σ : (T :: Δ) ->
+  Γ ⊢s σ ≈ subst_ext (↑ ∘ σ) (exp_var 0) : (T :: Δ)
 | eq_subst_sym : forall Γ Δ σ σ',
   Γ ⊢s σ ≈ σ' : Δ ->
   Γ ⊢s σ' ≈ σ : Δ
@@ -270,26 +273,3 @@ where "⊢ Γ" := (WfCtx Γ) and
       "Γ ⊢s σ : Δ" := (SubstTyping Γ σ Δ) and 
       "Γ ⊢ t ≈ t' : T" := (EqExp Γ t t' T) and 
       "Γ ⊢s σ ≈ σ' : Δ" := (EqSubst Γ σ σ' Δ).
-
-(* Scheme wf_ctx_ind := Induction for WfCtx Sort Prop
-  with eq_ctx_ind := Induction for EqCtx Sort Prop
-  with typing_ind := Induction for Typing Sort Prop
-  with subst_typing_ind := Induction for SubstTyping Sort Prop
-  with eq_exp_ind := Induction for EqExp Sort Prop 
-  with eq_subst_ind := Induction for EqSubst Sort Prop.
-
-Combined Scheme wf_ctx_eq_ctx_typing_subst_typing_eq_exp_eq_subst_mutind from wf_ctx_ind, eq_ctx_ind, typing_ind, subst_typing_ind, eq_exp_ind, eq_subst_ind.
-
-Hint Constructors WfCtx EqCtx Typing SubstTyping EqExp EqSubst : core.
-
-Lemma wf : 
-  (forall Γ, ⊢ Γ -> True ) /\ 
-  (forall Γ Δ, ⊢ Γ ≈ Δ -> ⊢ Γ /\ ⊢ Δ) /\
-  (forall Γ t T, Γ ⊢ t : T -> ⊢ Γ /\ exists i, Γ ⊢ T : exp_set i) /\
-  (forall Γ σ Δ, Γ ⊢s σ : Δ -> ⊢ Γ /\ ⊢ Δ) /\
-  (forall Γ t t' T, Γ ⊢ t ≈ t' : T -> ⊢ Γ /\ Γ ⊢ t : T /\ Γ ⊢ t' : T /\ exists i, Γ ⊢ T : exp_set i) /\
-  (forall Γ σ σ' Δ, Γ ⊢s σ ≈ σ' : Δ -> ⊢ Γ /\ Γ ⊢s σ : Δ /\ Γ ⊢s σ' : Δ /\ ⊢ Δ).
-Proof.
-  apply wf_ctx_eq_ctx_typing_subst_typing_eq_exp_eq_subst_mutind; intros; try solve [ intuition; eauto ].
-  - intuition; eauto. econstructor; eauto.
-Admitted. *)
