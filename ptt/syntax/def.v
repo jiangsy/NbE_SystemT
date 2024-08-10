@@ -1,5 +1,7 @@
 Require Import Coq.Lists.List.
 
+
+Reserved Notation "'Typ'".
 Inductive Subst : Set :=
 | subst_shift 
 | subst_id 
@@ -9,13 +11,14 @@ with Exp : Set :=
 | exp_var (n : nat)
 | exp_zero  
 | exp_suc (e : Exp)
-| exp_rec (V : Exp) (z s n: Exp)
+| exp_rec (V : Typ) (z s n: Exp)
 | exp_abs (e : Exp)
 | exp_app (e1 e2 : Exp)
 | exp_subst (e : Exp) (σ : Subst)
 | exp_nat
 | exp_set (k : nat)
-| exp_pi (S T : Exp).
+| exp_pi (S T : Typ)
+where "'Typ'" := (Exp).
 
 Definition Ctx := list Exp.
 
