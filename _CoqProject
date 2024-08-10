@@ -14,4 +14,4 @@
 
 ./ptt/syntax/def.v
 ./ptt/syntax/rule.v
-
+./ptt/syntax/rule_full.v
