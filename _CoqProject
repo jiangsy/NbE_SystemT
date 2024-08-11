@@ -15,3 +15,4 @@
 ./ptt/syntax/def.v
 ./ptt/syntax/def_rule_concise.v
 ./ptt/syntax/def_rule_full.v
+./ptt/syntax/prop_rule_equiv.v
