@@ -87,3 +87,6 @@ Notation " n : T ∈ Γ " := (InCtx n T Γ)
   (at level 55, T at next level, no associativity).
 
 Definition q (σ : Subst) := subst_ext (σ ∘ ↑) (exp_var 0).
+
+Hint Constructors nat : core.
+Hint Constructors InCtx : core.

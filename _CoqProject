@@ -13,5 +13,5 @@
 ./systemt/_.v
 
 ./ptt/syntax/def.v
-./ptt/syntax/rule.v
-./ptt/syntax/rule_full.v
+./ptt/syntax/def_rule_concise.v
+./ptt/syntax/def_rule_full.v

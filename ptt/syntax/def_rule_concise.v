@@ -40,6 +40,7 @@ with Typing : Ctx -> Exp -> Exp -> Prop :=
   ⊢ Γ ->
   Γ ⊢ (𝕊 i) : (exp_set (1 + i))
 | typing_pi : forall Γ S T i,
+  Γ ⊢ S : 𝕊 i ->
   (S :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ exp_pi S T : 𝕊 i
 | typing_var : forall Γ n T,
@@ -56,6 +57,7 @@ with Typing : Ctx -> Exp -> Exp -> Prop :=
   (ℕ :: Γ) ⊢ T : 𝕊 i ->
   Γ ⊢ tz : T [| exp_zero ] ->
   (T :: ℕ :: Γ) ⊢ ts : ( T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ) ->
+  Γ ⊢ tn : ℕ ->
   Γ ⊢ exp_rec T tz ts tn : T [| tn ]
 | typing_abs : forall Γ t S T,
   (S :: Γ) ⊢ t : T ->
@@ -104,6 +106,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ 𝕊 i [ σ ] ≈ 𝕊 i : exp_set (1 + i)
 | eq_exp_prop_pi : forall Γ Δ σ S T i,
   Γ ⊢s σ : Δ ->
+  Δ ⊢ S : 𝕊 i -> 
   (S :: Δ) ⊢ T : 𝕊 i ->
   Γ ⊢ exp_pi S T [ σ ] ≈ exp_pi (S [ σ ]) (T [subst_ext (σ ∘ ↑) (exp_var 0)]) : 𝕊 i
 | eq_exp_prop_zero : forall Γ Δ σ,
@@ -149,7 +152,7 @@ with EqExp : Ctx -> Exp -> Exp -> Exp -> Prop :=
   Γ ⊢ r ▫ s ≈ r' ▫ s' : T [| s ]
 | eq_exp_comp_rec : forall Γ tz tz' ts ts' tn tn' T T' i,
   Γ ⊢ tz ≈ tz' : T [| exp_zero ] ->
-  (T :: ℕ :: Γ) ⊢ ts : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
+  (T :: ℕ :: Γ) ⊢ ts ≈ ts' : T [ subst_ext (↑ ∘ ↑) (exp_suc (exp_var 1)) ] ->
   Γ ⊢ tn ≈ tn' : ℕ ->
   (ℕ :: Γ) ⊢ T ≈ T' : 𝕊 i ->
   Γ ⊢ exp_rec T tz ts tn ≈ exp_rec T' tz' ts' tn' : T [| tn ]
@@ -255,7 +258,7 @@ with EqSubst : Ctx -> Subst -> Subst -> Ctx -> Prop :=
   Γ ⊢s ↑ ∘ (subst_ext σ t) ≈ σ : Δ
 | eq_subst_eta_ext : forall Γ Δ σ T,
   Γ ⊢s σ : (T :: Δ) ->
-  Γ ⊢s σ ≈ subst_ext (↑ ∘ σ) (exp_var 0) : (T :: Δ)
+  Γ ⊢s σ ≈ subst_ext (↑ ∘ σ) (exp_var 0 [σ]) : (T :: Δ)
 | eq_subst_sym : forall Γ Δ σ σ',
   Γ ⊢s σ ≈ σ' : Δ ->
   Γ ⊢s σ' ≈ σ : Δ
