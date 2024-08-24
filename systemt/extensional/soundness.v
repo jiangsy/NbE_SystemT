@@ -64,11 +64,11 @@ Fixpoint interp_typ (T : Typ) : KripkeTypeStructure :=
   | S' → T' => fun Γ => KripkeArrSpace S' T' Γ (interp_typ S') (interp_typ T')
   end.
 
-Notation "t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈" := ((interp_typ T) Γ t d)
-  (at level 48, d at next level, T at next level, no associativity).
+Notation "Γ ⊢ t : T ® d" := ((interp_typ T) Γ t d)
+  (at level 55, t at next level, T at next level, no associativity).
 
-Lemma in_typ_structure_wf : forall Γ t T d,
-  t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> 
+Lemma log_rel_typing : forall Γ t T d,
+  Γ ⊢ t : T ® d -> 
   Γ ⊢ t : T.
 Proof.
   intros. generalize dependent t. generalize dependent d. generalize dependent Γ.
@@ -142,8 +142,8 @@ Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_
 Qed.
 
 Lemma lower_subset_interp_typ_subset_upper : forall T Γ t,
-  (forall e, t × e ∈ ⌊ T ⌋ ⦇ Γ ⦈ -> t × (d_refl T e) ∈ ⟦ T ⟧ ⦇ Γ ⦈) /\
-  (forall d, t × d ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈).
+  (forall e, t × e ∈ ⌊ T ⌋ ⦇ Γ ⦈ -> Γ ⊢ t : T ® (d_refl T e)) /\
+  (forall d, Γ ⊢ t : T ® d -> t × d ∈ ⌈ T ⌉ ⦇ Γ ⦈).
 Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken.
   intro T. induction T; intros; split; intros.
   - simpl. apply nat_lower_subset_upper. auto.
@@ -156,7 +156,7 @@ Proof with eauto using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_
     intuition. apply H2.
     unfold KripkeCandidateSpaceLower. intuition.
     eapply typing_app with (S:=T1)... 
-    eapply in_typ_structure_wf; eauto. 
+    eapply log_rel_typing; eauto. 
     specialize (H1 (Δ0 ++ Δ)). destruct H1 as [u].
     specialize (IHT1 (Δ ++ Γ) s). intuition.
     apply H5 in H. unfold KripkeCandidateSpaceUpper in H. intuition.
@@ -191,14 +191,14 @@ Qed.
 
 Corollary lower_subst_interp_typ : forall Γ e t T,
   t × e ∈ ⌊ T ⌋ ⦇ Γ ⦈ -> 
-  t × (d_refl T e) ∈ ⟦ T ⟧ ⦇ Γ ⦈.
+  Γ ⊢ t : T ® (d_refl T e).
 Proof.
   intros.
   pose proof (lower_subset_interp_typ_subset_upper T Γ t). intuition.
 Qed.
 
 Corollary interp_typ_subset_upper : forall Γ a t T,
-  t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> 
+  Γ ⊢ t : T ® a -> 
   t × a ∈ ⌈ T ⌉ ⦇ Γ ⦈.
 Proof.
   intros.
@@ -207,8 +207,8 @@ Qed.
 
 Lemma syn_eq_exp_in_interp_typ : forall T Γ t t' a,
   Γ ⊢ t ≈ t' : T ->
-  t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈ ->
-  t' × a ∈ ⟦ T ⟧ ⦇ Γ ⦈.
+  Γ ⊢ t : T ® a ->
+  Γ ⊢ t' : T ® a.
 Proof with eauto using ExpEq, SubstEq, typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken.
   intro. induction T; intros.
   - simpl in *. unfold KripkeCandidateSpaceUpper in *. intuition.
@@ -220,17 +220,17 @@ Proof with eauto using ExpEq, SubstEq, typing_sem_eq_exp, subst_typing_sem_eq_su
     eapply syn_exp_eq_typing_r; eauto.
     apply H2 in H0 as IH1. destruct IH1 as [b]. exists b. intuition.
     eapply IHT2; eauto...
-    eapply in_typ_structure_wf in H5 as IH2. inversion IH2; subst. 
+    eapply log_rel_typing in H5 as IH2. inversion IH2; subst. 
     eapply exp_eq_comp_app with (S:=T1); eauto...
     eapply exp_eq_comp_subst; eauto. 
     eapply typing_weaken with (Δ:=Δ) in H1.
-    apply in_typ_structure_wf in H0 as IH3. apply exp_eq_refl; eauto.
+    apply log_rel_typing in H0 as IH3. apply exp_eq_refl; eauto.
 Qed.
 
 Lemma in_interp_typ_weaken : forall Δ T Γ t a,
-  t × a ∈ ⟦ T ⟧ ⦇ Γ ⦈ -> 
-  t [subst_from_weaken Δ] × a ∈ ⟦ T ⟧ ⦇ Δ ++ Γ ⦈.
-Proof with eauto 4 using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken, in_typ_structure_wf.
+  Γ ⊢ t : T ® a -> 
+  (Δ ++ Γ) ⊢ (t [subst_from_weaken Δ]) : T ® a.
+Proof with eauto 4 using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_from_weaken_sound, typing_weaken, log_rel_typing.
   intro Δ. induction Δ; simpl.
   - intros. eapply syn_eq_exp_in_interp_typ; eauto...
   - intro. induction T; auto.
@@ -264,31 +264,31 @@ Proof with eauto 4 using typing_sem_eq_exp, subst_typing_sem_eq_subst, subst_fro
       apply exp_eq_symm.
       eapply exp_eq_prop_comp with (Γ2:=one a ++ Δ ++ Γ)... simpl...
       eapply exp_eq_refl.
-      eapply in_typ_structure_wf...
+      eapply log_rel_typing...
 Qed.
 
-Definition FutureContext (Γ Δ : Ctx) (ρ : Env) (σ : Subst): Prop :=
-  Δ ⊢s σ : Γ /\ (forall i T, nth_error Γ i = Some T -> (exp_var i) [ σ ] × (ρ i) ∈ ⟦ T ⟧ ⦇ Δ ⦈).
+Definition SubstLogRel (Γ Δ : Ctx) (ρ : Env) (σ : Subst): Prop :=
+  Δ ⊢s σ : Γ /\ (forall i T, nth_error Γ i = Some T -> Δ ⊢ (exp_var i) [ σ ] : T ® (ρ i)).
 
-Notation "σ × ρ ∈ Δ ≤ Γ" := (FutureContext Γ Δ ρ σ)
-  (at level 48, ρ at next level, Δ at next level, no associativity).
+Notation "Γ ⊢s σ : Δ ® ρ" := (SubstLogRel Γ Δ ρ σ)
+  (at level 55, σ at next level, Δ at next level, no associativity).
 
-Definition ExpLogicalRel (Γ : Ctx) (t : Exp) (T : Typ) :=
-  forall ρ σ Δ, σ × ρ ∈ Δ ≤ Γ -> exists a, ⟦ t ⟧ ρ ↘ a /\ (t [σ]) × a ∈ ⟦ T ⟧ ⦇ Δ ⦈.
+Definition SemTyping (Γ : Ctx) (t : Exp) (T : Typ) :=
+  forall ρ σ Δ, Γ ⊢s σ : Δ ® ρ -> exists a, ⟦ t ⟧ ρ ↘ a /\ Δ ⊢ (t [σ]) : T ® a.
 
-Notation "Γ ⫢ t : T" := (ExpLogicalRel Γ t T)
+Notation "Γ ⫢ t : T" := (SemTyping Γ t T)
   (at level 55, t at next level, no associativity).
 
 Definition SubstLogicalRel (Γ Δ : Ctx) (σ : Subst) : Prop := 
-  forall ρ' σ' Δ', σ' × ρ' ∈ Δ' ≤ Γ -> exists ρ, ⟦ σ ⟧s ρ' ↘ ρ /\ (σ ∘ σ') × ρ ∈ Δ' ≤ Δ.
+  forall ρ' σ' Δ', Γ ⊢s σ' : Δ' ® ρ' -> exists ρ, ⟦ σ ⟧s ρ' ↘ ρ /\ Δ ⊢s (σ ∘ σ') : Δ' ® ρ. 
 
 Notation "Γ ⫢s σ : Δ" := (SubstLogicalRel Γ Δ σ)
   (at level 55, σ at next level, no associativity).
 
-Lemma init_env_future_context : forall Γ,
-  es_id × (init_env Γ) ∈ Γ ≤ Γ.
+Lemma init_env_subst_log_rel : forall Γ,
+  Γ ⊢s es_id : Γ ® (init_env Γ).
 Proof with eauto using Typing, ExpEq.
-  intros. unfold FutureContext. intuition. generalize dependent i. induction Γ; auto; intros.
+  intros. unfold SubstLogRel. intuition. generalize dependent i. induction Γ; auto; intros.
   - destruct i; simpl in *; inversion H.
   - destruct i.
     + simpl in *. inversion H; subst. 
@@ -314,40 +314,40 @@ Ltac destruct_es_id :=
     | H : ?Γ ⊢s ?σ ∘ es_id : ?Δ |- _ => inversion H; subst; clear H
     end.
 
-Lemma exp_logical_rel_typing : forall Γ t T,
+Lemma sem_typing_syn_typing : forall Γ t T,
   Γ ⫢ t : T -> 
   Γ ⊢ t : T.
 Proof.
-  intros. unfold ExpLogicalRel in *.
-  pose proof (init_env_future_context Γ). apply H in H0. 
+  intros. unfold SemTyping in *.
+  pose proof (init_env_subst_log_rel Γ). apply H in H0. 
   destruct H0 as [a]. intuition.
-  apply in_typ_structure_wf in H2. destruct_es_id. auto.
+  apply log_rel_typing in H2. destruct_es_id. auto.
 Qed.
 
-Lemma subst_logical_rel_subst_typing : forall Γ σ Δ,
+Lemma sem_subst_syn_subst : forall Γ σ Δ,
   Γ ⫢s σ : Δ ->
   Γ ⊢s σ : Δ.
 Proof.
   intros. unfold SubstLogicalRel in *. 
-  pose proof (init_env_future_context Γ). apply H in H0. 
+  pose proof (init_env_subst_log_rel Γ). apply H in H0. 
   destruct H0 as [ρ]. intuition. 
-  unfold FutureContext in H2. intuition. destruct_es_id. auto.
+  unfold SubstLogRel in H2. intuition. destruct_es_id. auto.
 Qed.
 
 Hint Constructors EvalRel AppRel RecRel SubstRel RNeRel RNfRel : core.
 
-Lemma logical_rel_var : forall Γ i T,
+Lemma sem_typing_var : forall Γ i T,
   nth_error Γ i = Some T ->
   Γ ⫢ (exp_var i) : T.
 Proof.
-  intros. unfold ExpLogicalRel. intros. exists (ρ i). intuition.
-  unfold FutureContext in H0. intuition.
+  intros. unfold SemTyping. intros. exists (ρ i). intuition.
+  unfold SubstLogRel in H0. intuition.
 Qed.
 
-Lemma logical_rel_zero : forall Γ,
+Lemma sem_typing_zero : forall Γ,
   Γ ⫢ exp_zero : ℕ.
 Proof.
-  intros. unfold ExpLogicalRel. intros. unfold FutureContext in H. intuition. 
+  intros. unfold SemTyping. intros. unfold SubstLogRel in H. intuition. 
   exists d_zero. intuition.
   apply syn_eq_exp_in_interp_typ with (t:=exp_zero). simpl.
   apply exp_eq_symm. eapply exp_eq_prop_zero; eauto. simpl.
@@ -356,11 +356,11 @@ Proof.
   eapply exp_eq_prop_zero; eauto.
 Qed.
 
-Lemma logical_rel_suc : forall Γ t,
+Lemma sem_typing_suc : forall Γ t,
   Γ ⫢ t : ℕ ->
   Γ ⫢ (exp_suc t) : ℕ.
 Proof.
-  intros. unfold ExpLogicalRel in *. intros.
+  intros. unfold SemTyping in *. intros.
   apply H in H0. destruct H0 as [a].
   exists (d_suc a). intuition. simpl in *. unfold KripkeCandidateSpaceUpper in *.
   intuition; eauto.
@@ -375,20 +375,21 @@ Proof.
   eapply exp_eq_prop_suc; eauto.
 Qed.
 
-Lemma logical_rel_abs : forall Γ t S T,
+Lemma sem_typing_abs : forall Γ t S T,
   (S :: Γ) ⫢ t : T ->
   Γ ⫢ (λ t) : S → T.
 Proof.
-  intros. pose proof (exp_logical_rel_typing _ _ _ H) as Htyping. 
-  unfold ExpLogicalRel in *. intros.
+  intros. pose proof (sem_typing_syn_typing _ _ _ H) as Htyping. 
+  unfold SemTyping in *. intros.
   exists (d_abs t ρ). intuition. simpl. unfold KripkeArrSpace. intuition.
-  unfold FutureContext in H0. intuition. econstructor; eauto. 
+  unfold SubstLogRel in H0. intuition. econstructor; eauto. 
   specialize (H (ρ ↦ a) (es_ext (σ ∘ subst_from_weaken Δ0) s) (Δ0 ++ Δ)).
-  assert ((es_ext (σ ∘ subst_from_weaken Δ0) s) × (ρ ↦ a) ∈ (Δ0 ++ Δ) ≤ (S :: Γ)).
+  assert (
+      (S :: Γ) ⊢s (es_ext (σ ∘ subst_from_weaken Δ0) s) : (Δ0 ++ Δ) ® (ρ ↦ a)).
   {
-    unfold FutureContext in H0. intuition.
-    apply in_typ_structure_wf in H1 as Htyp.
-    unfold FutureContext. intuition. 
+    unfold SubstLogRel in H0. intuition.
+    apply log_rel_typing in H1 as Htyp.
+    unfold SubstLogRel. intuition. 
     - eapply styping_ext; eauto.
     - destruct i; simpl in *. 
       + inversion H0; subst. eapply syn_eq_exp_in_interp_typ; eauto. 
@@ -397,8 +398,8 @@ Proof.
         eapply syn_eq_exp_in_interp_typ with (t:=exp_var i [σ] [subst_from_weaken Δ0]); eauto.
   } 
   apply H in H2. destruct H2 as [b]. exists b. intuition.
-  unfold FutureContext in H0. intuition.
-  apply in_typ_structure_wf in H1 as Htyp.
+  unfold SubstLogRel in H0. intuition.
+  apply log_rel_typing in H1 as Htyp.
   eapply syn_eq_exp_in_interp_typ with (t:= exp_abs (t [(es_ext ((σ ∘ subst_from_weaken Δ0) ∘ ↑) (exp_var 0))]) ▫ s).
   eapply exp_eq_comp_app with (S:=S); eauto.
   eapply exp_eq_trans with (t2:=(λ t) [σ ∘ subst_from_weaken Δ0]); eauto.
@@ -443,33 +444,34 @@ Proof.
 Qed.
 
 Lemma logical_rec_helper: forall Γ Δ σ ρ tz ts bz bs bn (w : Nf) T,
-  σ × ρ ∈ Δ ≤ Γ ->
+  Γ ⊢s σ : Δ ® ρ ->
   ⟦ tz ⟧ ρ ↘ bz ->
-  tz [ σ ] × bz ∈ ⟦ T ⟧ ⦇ Δ ⦈ ->
+  Δ ⊢ (tz [ σ ]) : T ® bz ->
   ⟦ ts ⟧ ρ ↘ bs ->
-  ts [ σ ] × bs ∈ ⟦ ℕ → T → T ⟧ ⦇ Δ ⦈ ->
-  w × bn ∈ ⟦ ℕ ⟧ ⦇ Δ ⦈ ->
+  Δ ⊢ (ts [ σ ]) : ( ℕ → T → T) ® bs ->
+  Δ ⊢ w : ℕ ® bn ->
   Rⁿᶠ ⦇ length Δ ⦈ (dnf_reif ℕ bn) ↘ w ->
-  exists a, rec( T , bz , bs , bn ) ↘ a /\ (exp_rec T ( tz [ σ ] ) ( ts [ σ ]) w) × a ∈ ⟦ T ⟧ ⦇ Δ ⦈.
+  exists a, rec( T , bz , bs , bn ) ↘ a /\ 
+    Δ ⊢ (exp_rec T ( tz [ σ ] ) ( ts [ σ ]) w) : T ® a.
 Proof.
   intros. dependent induction H5.
   - exists bz; intuition.
     eapply syn_eq_exp_in_interp_typ with (t:=tz [ σ ]); auto.
     apply exp_eq_symm.
     apply exp_eq_beta_rec_zero; auto. 
-    eapply in_typ_structure_wf; eauto.
-    eapply in_typ_structure_wf; eauto.
+    eapply log_rel_typing; eauto.
+    eapply log_rel_typing; eauto.
   - eapply IHRNfRel in H3 as IH; eauto. 
     + destruct IH as [b']. intuition.
       simpl in H3. unfold KripkeArrSpace in H3. intuition.
-      apply in_typ_structure_wf in H4 as Hwft. inversion Hwft. subst. 
+      apply log_rel_typing in H4 as Hwft. inversion Hwft. subst. 
       apply suc_in_nat_space_inv in H4. fold nf_to_exp in H4.
       replace Δ with (nil ++ Δ) in H4 by auto. 
       apply H9 in H4 as IH. destruct IH as [f]. intuition.
       replace Δ with (nil ++ Δ) in H8 by auto.
       apply H13 in H8. destruct H8 as [b]. exists b. simpl in *. intuition.
       eauto.
-      apply in_typ_structure_wf in H1 as Hwfz.
+      apply log_rel_typing in H1 as Hwfz.
       eapply syn_eq_exp_in_interp_typ with (t:=((ts [σ] [es_id] ▫ t) [es_id] ▫ exp_rec T (tz [σ]) (ts [σ]) t)); auto.
       eapply exp_eq_trans with (t2:= (ts [ σ ] ▫ t) ▫ exp_rec T (tz [σ]) (ts [σ]) t); eauto.
       eapply exp_eq_comp_app with (S := T); eauto.
@@ -477,9 +479,9 @@ Proof.
       apply exp_eq_refl. eauto. 
     + apply suc_in_nat_space_inv; eauto. 
   - exists (d_refl T (dne_rec T (dnf_reif T bz) (dnf_reif (ℕ → T → T) bs) e)). intuition.
-    apply in_typ_structure_wf in H1 as Hwfz.
-    apply in_typ_structure_wf in H3 as Hwfs.
-    apply in_typ_structure_wf in H4 as Hwfn.
+    apply log_rel_typing in H1 as Hwfz.
+    apply log_rel_typing in H3 as Hwfs.
+    apply log_rel_typing in H4 as Hwfn.
     eapply lower_subst_interp_typ. unfold KripkeCandidateSpaceLower. intuition.
     apply interp_typ_subset_upper in H1.
     apply interp_typ_subset_upper in H3.
@@ -492,17 +494,17 @@ Proof.
     eapply exp_eq_comp_rec; auto. 
 Qed.
 
-Lemma logical_rel_rec : forall Γ ts tz tn T,
+Lemma sem_typing_rec : forall Γ ts tz tn T,
   Γ ⫢ tz : T ->
   Γ ⫢ ts : ℕ → T → T ->
   Γ ⫢ tn : ℕ ->
   Γ ⫢ exp_rec T tz ts tn : T.
 Proof.
   intros.
-  apply exp_logical_rel_typing in H as Htypz.
-  apply exp_logical_rel_typing in H0 as Htyps.
-  apply exp_logical_rel_typing in H1 as Htypn.
-  unfold ExpLogicalRel in *. intros.
+  apply sem_typing_syn_typing in H as Htypz.
+  apply sem_typing_syn_typing in H0 as Htyps.
+  apply sem_typing_syn_typing in H1 as Htypn.
+  unfold SemTyping in *. intros.
   apply H in H2 as IH1. apply H0 in H2 as IH2. apply H1 in H2 as IH3.
   destruct IH1 as [bz].
   destruct IH2 as [bs].
@@ -512,13 +514,13 @@ Proof.
   eapply logical_rec_helper with (bz:=bz) (bn:=bn)  in H8 as IH1; eauto 4.
   - destruct IH1 as [a]. exists a.
     intuition; eauto.
-    apply in_typ_structure_wf in H7 as Hwfz.
-    apply in_typ_structure_wf in H8 as Hwfs. 
+    apply log_rel_typing in H7 as Hwfz.
+    apply log_rel_typing in H8 as Hwfs. 
     apply syn_eq_exp_in_interp_typ with (t:=exp_rec T (tz [σ]) (ts [σ]) w); auto.
     apply exp_eq_trans with (t2:=exp_rec T (tz [ σ ]) (ts [ σ ]) (tn [ σ ])); eauto.
     apply exp_eq_comp_rec; eauto.
     apply exp_eq_symm; eauto.
-    eapply exp_eq_prop_rec; eauto. unfold FutureContext in H2. intuition.
+    eapply exp_eq_prop_rec; eauto. unfold SubstLogRel in H2. intuition.
   - intros. simpl. unfold KripkeCandidateSpaceUpper. intuition.
     + eapply syn_exp_eq_typing_r; eauto.
     + specialize (H10 Δ0). destruct H10 as [w']. exists w'. intuition.
@@ -527,12 +529,12 @@ Proof.
       eapply exp_eq_comp_subst; eauto.
 Qed.
 
-Lemma logical_rel_app : forall Γ r s S T,
+Lemma sem_typing_app : forall Γ r s S T,
   Γ ⫢ r : S → T ->
   Γ ⫢ s : S ->
   Γ ⫢ r ▫ s : T.
 Proof.
-  intros. unfold ExpLogicalRel in *. intros.
+  intros. unfold SemTyping in *. intros.
   apply H in H1 as IH1. destruct IH1 as [f]. intuition.
   simpl in H4. unfold KripkeArrSpace in H4. intuition.
   apply H0 in H1 as IH2. destruct IH2 as [a]. intuition.
@@ -540,46 +542,46 @@ Proof.
   apply H5 in IH. destruct IH as [b]. intuition.  exists b; intuition. 
   - eauto.
   - simpl in *.
-    pose proof (init_env_future_context Γ). apply H0 in H4 as IH3. destruct IH3 as [a'].
+    pose proof (init_env_subst_log_rel Γ). apply H0 in H4 as IH3. destruct IH3 as [a'].
     apply H in H4 as IH4. destruct IH4 as [f']. intuition. 
     unfold KripkeArrSpace in H14. intuition. destruct_es_id. 
-    unfold FutureContext in H1. intuition. 
-    intuition. apply in_typ_structure_wf in H13. destruct_es_id.
+    unfold SubstLogRel in H1. intuition. 
+    intuition. apply log_rel_typing in H13. destruct_es_id.
     eapply syn_eq_exp_in_interp_typ with (t:=(r [σ]) ▫ (s [σ])). 
     apply exp_eq_symm. eapply exp_eq_prop_app; eauto. 
     eapply syn_eq_exp_in_interp_typ with (t:=(r [σ] [es_id]) ▫ (s [σ] [es_id])); eauto.
 Qed.
 
-Lemma logical_rel_subst : forall Γ Δ t σ T,
+Lemma sem_typing_subst : forall Γ Δ t σ T,
   Γ ⫢s σ : Δ ->
   Δ ⫢ t : T ->
   Γ ⫢ t [ σ ] : T. 
 Proof.
   intros. 
-  apply exp_logical_rel_typing in H0 as Htyp.
-  apply subst_logical_rel_subst_typing in H as Hsubst.
-  unfold ExpLogicalRel in *. unfold SubstLogicalRel in *. intros. 
+  apply sem_typing_syn_typing in H0 as Htyp.
+  apply sem_subst_syn_subst in H as Hsubst.
+  unfold SemTyping in *. unfold SubstLogicalRel in *. intros. 
   apply H in H1 as IH1. destruct IH1 as [ρ']. intuition.
   apply H0 in H4 as IH2. destruct IH2 as [a]. intuition. 
-  unfold FutureContext in H1. intuition. exists a. intuition. eauto.
+  unfold SubstLogRel in H1. intuition. exists a. intuition. eauto.
   apply syn_eq_exp_in_interp_typ with (t := t [σ ∘ σ0]); eauto.
 Qed.
 
-Lemma subst_logical_rel_id : forall Γ,
+Lemma sem_subst_id : forall Γ,
   Γ ⫢s es_id : Γ.
 Proof.
   intros. unfold SubstLogicalRel. intros. exists ρ'. intuition.
-  unfold FutureContext in *. intuition.
+  unfold SubstLogRel in *. intuition.
   - eapply syn_subst_eq_subst_typing_l with (σ':=σ'). eauto.
   - eapply syn_eq_exp_in_interp_typ with (t:=exp_var i [σ']); eauto.
 Qed.
 
-Lemma subst_logical_rel_shift : forall Γ T,
+Lemma sem_subst_shift : forall Γ T,
   (T :: Γ) ⫢s ↑ : Γ.
 Proof.
-  intros. unfold SubstLogicalRel. intros. unfold FutureContext in H. intuition.
+  intros. unfold SubstLogicalRel. intros. unfold SubstLogRel in H. intuition.
   exists (drop ρ'). intuition.
-  unfold FutureContext. intuition. eauto.
+  unfold SubstLogRel. intuition. eauto.
   assert (nth_error (T :: Γ) (S i) = Some T0) by auto. apply H1 in H2.
   replace (drop ρ' i) with (ρ' (S i)) by auto.
   apply syn_eq_exp_in_interp_typ with (t := exp_var (S i) [σ']); eauto.
@@ -587,7 +589,7 @@ Proof.
   eapply exp_eq_comp_subst; eauto.
 Qed.
 
-Lemma subst_logical_rel_comp : forall Γ1 Γ2 Γ3 σ1 σ2,
+Lemma sem_subst_comp : forall Γ1 Γ2 Γ3 σ1 σ2,
   Γ1 ⫢s σ1 : Γ2 ->
   Γ2 ⫢s σ2 : Γ3 ->
   Γ1 ⫢s σ2 ∘ σ1 : Γ3.
@@ -595,36 +597,36 @@ Proof.
   intros. unfold SubstLogicalRel in *. intros.
   apply H in H1. destruct H1 as [ρ1]. intuition.
   apply H0 in H3. destruct H3 as [ρ2]. exists ρ2. intuition.
-  econstructor; eauto. unfold FutureContext in *. intuition.
+  econstructor; eauto. unfold SubstLogRel in *. intuition.
   - inversion H1. subst. inversion H8. subst. eauto. 
   - inversion H1. subst. inversion H9. subst. apply H5 in H4 as IH. 
     apply syn_eq_exp_in_interp_typ with (t:=exp_var i [σ2 ∘ σ1 ∘ σ']); eauto.
 Qed.
 
-Lemma subst_logical_rel_ext : forall Γ Δ σ s S,
+Lemma sem_subst_ext : forall Γ Δ σ s S,
   Γ ⫢s σ : Δ ->
   Γ ⫢ s : S ->
   Γ ⫢s es_ext σ s : (S :: Δ).
 Proof.
   intros.
-  apply exp_logical_rel_typing in H0 as Htyp.
-  apply subst_logical_rel_subst_typing in H as Hsubst.
+  apply sem_typing_syn_typing in H0 as Htyp.
+  apply sem_subst_syn_subst in H as Hsubst.
   unfold SubstLogicalRel in *. intros.
-  unfold ExpLogicalRel in *.  
+  unfold SemTyping in *.  
   apply H in H1 as IH1. destruct IH1 as [ρ].
   apply H0 in H1 as IH2. destruct IH2 as [a].
-  exists (ρ ↦ a). intuition. unfold FutureContext. intuition.
+  exists (ρ ↦ a). intuition. unfold SubstLogRel. intuition.
   - eapply styping_comp with (Γ2:=Γ); eauto.
-    unfold FutureContext in H1. intuition.
-  - unfold FutureContext in H5. intuition. 
+    unfold SubstLogRel in H1. intuition.
+  - unfold SubstLogRel in H5. intuition. 
     destruct i; simpl in *. 
-    + inversion H3. subst. apply in_typ_structure_wf in H6 as Hwf. 
-      unfold FutureContext in H1. intuition.
+    + inversion H3. subst. apply log_rel_typing in H6 as Hwf. 
+      unfold SubstLogRel in H1. intuition.
       eapply syn_eq_exp_in_interp_typ with (t:= s [ σ' ]); auto.
       eapply exp_eq_trans with (t2 := exp_var 0 [es_ext (σ ∘ σ') (s [ σ'])]); eauto.
       apply exp_eq_symm; eauto. 
       eapply exp_eq_comp_subst with (Δ:=T::Δ); eauto.
-    + apply H8 in H3 as IH. apply in_typ_structure_wf in H6. unfold FutureContext in H1. intuition. 
+    + apply H8 in H3 as IH. apply log_rel_typing in H6. unfold SubstLogRel in H1. intuition. 
       eapply syn_eq_exp_in_interp_typ with (t:=exp_var i [σ ∘ σ']); auto.
       eapply exp_eq_trans with (t2:=exp_var (Datatypes.S i) [es_ext (σ ∘ σ') (s [ σ' ])]); eauto.
       eapply exp_eq_comp_subst with (Δ:=S :: Δ); eauto.
@@ -635,17 +637,17 @@ Lemma typing_subst_typing_exp_subst_logical_relation :
   (forall Γ σ Δ, Γ ⊢s σ : Δ -> Γ ⫢s σ : Δ).
 Proof with eauto.
   apply typing_subst_typing_mutind; intros.
-  - apply logical_rel_var...
-  - apply logical_rel_abs...
-  - eapply logical_rel_app...
-  - apply logical_rel_zero.
-  - apply logical_rel_suc...
-  - apply logical_rel_rec...
-  - eapply logical_rel_subst...
-  - eapply subst_logical_rel_shift...
-  - eapply subst_logical_rel_id...
-  - eapply subst_logical_rel_comp...
-  - eapply subst_logical_rel_ext...
+  - apply sem_typing_var...
+  - apply sem_typing_abs...
+  - eapply sem_typing_app...
+  - apply sem_typing_zero.
+  - apply sem_typing_suc...
+  - apply sem_typing_rec...
+  - eapply sem_typing_subst...
+  - eapply sem_subst_shift...
+  - eapply sem_subst_id...
+  - eapply sem_subst_comp...
+  - eapply sem_subst_ext...
 Qed.
 
 Lemma typing_exp_logical_rel : forall Γ t T,
@@ -666,8 +668,8 @@ Lemma nbe_totality : forall Γ t T,
   Γ ⊢ t : T ->
   exists w, Nbe (length Γ) (init_env Γ) t T w.
 Proof.
-  intros. apply typing_exp_logical_rel in H as IH. unfold ExpLogicalRel in IH.
-  pose proof (init_env_future_context Γ).
+  intros. apply typing_exp_logical_rel in H as IH. unfold SemTyping in IH.
+  pose proof (init_env_subst_log_rel Γ).
   apply IH in H0. unfold Soundness. destruct H0 as [a]. intuition.
   apply interp_typ_subset_upper in H2. unfold KripkeCandidateSpaceUpper in H2.
   intuition. specialize (H3 nil). destruct H3 as [w].
@@ -678,8 +680,8 @@ Lemma nbe_soundness : forall Γ t T,
   Γ ⊢ t : T ->
   Soundness Γ t T (init_env Γ).
 Proof.
-  intros. apply typing_exp_logical_rel in H as IH. unfold ExpLogicalRel in IH.
-  pose proof (init_env_future_context Γ).
+  intros. apply typing_exp_logical_rel in H as IH. unfold SemTyping in IH.
+  pose proof (init_env_subst_log_rel Γ).
   apply IH in H0. unfold Soundness. destruct H0 as [a].
   intuition.
   apply interp_typ_subset_upper in H2. unfold KripkeCandidateSpaceUpper in H2.
